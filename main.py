@@ -2,23 +2,27 @@ from collections import namedtuple
 import time
 import os
 
+
 Body = namedtuple('Body', 'x_pos y_pos z_pos x_vel y_vel z_vel mass')
 Force = namedtuple('Force', 'x y z magnitude')
-
 
 def run():
     frame_count = 0
     body = Body(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     f1 = Force(0.0, 1.0, 0.0, 4.0)
     start = time.time()
-    prev_frame = time.time_ns()
-    while time.time() - start < 10:
-        os.system('cls')
-        print(body)
-        delta_time = (time.time_ns() - prev_frame) / 1000000000.0
-        prev_frame = time.time_ns()
-        print(delta_time)
-        time.sleep(0.01)
+    time_passed = 0
+    prev_frame = 0
+
+    while time_passed < 10.0:
+        now = time.time()
+        delta_time = now - (prev_frame if prev_frame != 0 else now)
+        prev_frame = now
+
+        # os.system('cls')
+        # print(body)
+        # print(delta_time)
+        time.sleep(0.002)
         x_acc = (f1.magnitude * f1.x) / body.mass
         y_acc = (f1.magnitude * f1.y) / body.mass
         z_acc = (f1.magnitude * f1.z) / body.mass
@@ -29,7 +33,11 @@ def run():
         y_pos = body.y_pos + (body.y_vel * delta_time)
         z_pos = body.z_pos + (body.z_vel * delta_time)
         body = Body(x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, body.mass)
+
         frame_count += 1
+        time_passed = now - start
+    print(body)
+    print("time_passed: " + str(time_passed))
     print("fps: " + str(frame_count / 10.0))
 
 run()
