@@ -86,7 +86,7 @@ def init(vertices, indices):
     
     return window, shader, VAO
 
-def render(window, shader, VAO, indices, camera_distance, rotation, translation):
+def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation):
     glfw.poll_events()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # Clear the depth buffer bit
     glUseProgram(shader)
@@ -98,7 +98,7 @@ def render(window, shader, VAO, indices, camera_distance, rotation, translation)
     glUniform3f(glGetUniformLocation(shader, "objectColor"), 1.0, 0.5, 0.31)
     
     projection = matrix44.create_perspective_projection_matrix(45.0, 720.0 / 720.0, 0.1, 100.0)
-    view = matrix44.create_from_translation(Vector3([0.0, 0.0, camera_distance]))
+    view = matrix44.create_from_translation(Vector3([0.0, cam_y, cam_z]))
     
     model = Matrix44.identity()  # Add a model matrix
     model = matrix44.multiply(model, rotation)  # Apply the rotation

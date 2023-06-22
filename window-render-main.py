@@ -37,7 +37,7 @@ while window_active(window):
     rotation_x = Matrix44.from_x_rotation(np.radians(rotation_angle))  # Rotate by rotation_angle degrees around x-axis
     rotation_y = Matrix44.from_y_rotation(np.radians(rotation_angle))  # Rotate by rotation_angle degrees around y-axis
     rotation = matrix44.multiply(rotation_x, rotation_y)  # Combine the two rotations
-    render(window, shader, VAO, indices, -50, rotation, translation)
+    render(window, shader, VAO, indices, 50, -50, rotation, translation)
     rotation_angle += 0.075
     if rotation_angle >= 360.0:  # Keep rotation_angle between 0 and 359
         rotation_angle -= 360.0
