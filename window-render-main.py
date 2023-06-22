@@ -1,6 +1,6 @@
 from WindowRender import init, render, window_active, end
 import numpy as np
-from pyrr import Matrix44, matrix44
+from pyrr import Matrix44, matrix44, Vector3
 import time
 
 
@@ -32,11 +32,12 @@ window, shader, VAO = init(vertices, indices)
 
 # Main loop
 rotation_angle = 0.0
+translation = Matrix44.from_translation(Vector3([0.0, -10.0, 0.0]))  # Translate by (-10, 0, 0)
 while window_active(window):
     rotation_x = Matrix44.from_x_rotation(np.radians(rotation_angle))  # Rotate by rotation_angle degrees around x-axis
     rotation_y = Matrix44.from_y_rotation(np.radians(rotation_angle))  # Rotate by rotation_angle degrees around y-axis
     rotation = matrix44.multiply(rotation_x, rotation_y)  # Combine the two rotations
-    render(window, shader, VAO, indices, -10, rotation)
+    render(window, shader, VAO, indices, -50, rotation, translation)
     rotation_angle += 0.075
     if rotation_angle >= 360.0:  # Keep rotation_angle between 0 and 359
         rotation_angle -= 360.0

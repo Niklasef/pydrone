@@ -86,7 +86,7 @@ def init(vertices, indices):
     
     return window, shader, VAO
 
-def render(window, shader, VAO, indices, camera_distance, rotation):
+def render(window, shader, VAO, indices, camera_distance, rotation, translation):
     glfw.poll_events()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # Clear the depth buffer bit
     glUseProgram(shader)
@@ -102,7 +102,7 @@ def render(window, shader, VAO, indices, camera_distance, rotation):
     
     model = Matrix44.identity()  # Add a model matrix
     model = matrix44.multiply(model, rotation)  # Apply the rotation
-    
+    model = matrix44.multiply(model, translation)  # Apply the translation    
     glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, projection)
     glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, view)
     glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, model)
