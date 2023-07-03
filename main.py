@@ -58,7 +58,6 @@ def run():
 
     window, shader, VAO = init(vertices, indices)
 
-    inertia = spatialObject.body.mass * (1.0 * 1.0) * (3.0/10.0) #  when force at corner and acting perpendicular to face
     # while window_active(window):
     while time_passed < 10.0:
         now = time.time()
@@ -80,7 +79,10 @@ def run():
             spatialObject.vel.rot,
             delta_time,
             spatialObject.body)
-        coordinate_system_ = rotate(spatialObject.coordinateSystem, rot_axis, rot_angle)
+        coordinate_system_ = rotate(
+            spatialObject.coordinateSystem,
+            rot_axis,
+            rot_angle)
 
         origin_delta, lin_vel_ = apply_trans_force(
             f1_,
