@@ -1,5 +1,6 @@
+import numpy as np
 from collections import namedtuple
-from pyrr import matrix33
+from pyrr import matrix33, matrix44, Matrix44
 
 
 CoordinateSystem = namedtuple('CoordinateSystem', 'origin rotation')
@@ -20,3 +21,13 @@ def translate(coordinate_system, origin_delta):
     return CoordinateSystem(
             origin_, 
             coordinate_system.rotation)
+
+def rotate_to_global(coordinate_system, local_vector):
+    return matrix44.apply_to_vector(
+        Matrix44.from_matrix33(coordinate_system.rotation),
+        local_vector)
+
+def rotate_to_local(coordinate_system, global_vector):
+    return matrix44.apply_to_vector(
+        Matrix44.from_matrix33(np.linalg.inv(coordinate_system.rotation)),
+        global_vector)

@@ -3,14 +3,12 @@ import time
 import os
 import numpy as np
 from WindowRender import init, render, window_active, end
-from CoordinateSystem import CoordinateSystem, rotate, translate
+from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
+from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force
 
 
-Body = namedtuple('Body', 'mass')
-Velocity = namedtuple('Velocity', 'lin rot')
 SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
-Force = namedtuple('Force', 'dir pos magnitude')
 
 # Initialize FPS counter variables
 frame_count = 0
@@ -77,29 +75,28 @@ def run():
         else:
             f1_ = Force(dir=f1.dir, pos=f1.pos, magnitude=0.0)
 
-        tourque = np.cross(f1_.pos, f1_.dir * f1_.magnitude)
-        rot_acc = tourque / inertia
-        rot_vel_delta = rot_acc * delta_time
-        rot_vel_ = spatialObject.vel.rot + rot_vel_delta
-        rot_speed = np.linalg.norm(rot_vel_)
-        rot_axis = rot_vel_ / rot_speed if rot_speed > 0 else np.array([1.0, 0.0, 0.0])
-        rot_angle = rot_speed * delta_time
-
+        rot_axis, rot_angle, rot_vel_ = apply_rot_force(
+            f1_,
+            spatialObject.vel.rot,
+            delta_time,
+            spatialObject.body)
         coordinate_system_ = rotate(spatialObject.coordinateSystem, rot_axis, rot_angle)
 
-        lin_acc = (f1_.magnitude * f1_.dir) / spatialObject.body.mass
-        lin_vel_delta = lin_acc * delta_time
-        lin_vel_delta_rotated = matrix44.apply_to_vector(
-            Matrix44.from_matrix33(coordinate_system_.rotation),
-            lin_vel_delta)        
-        lin_vel_ = spatialObject.vel.lin + lin_vel_delta_rotated
-        origin_delta = lin_vel_ * delta_time
-
-        coordinate_system_ = translate(coordinate_system_, origin_delta)
+        origin_delta, lin_vel_ = apply_trans_force(
+            f1_,
+            rotate_to_local(coordinate_system_, spatialObject.vel.lin),
+            delta_time,
+            spatialObject.body)
+        coordinate_system_ = translate(
+            coordinate_system_,
+            rotate_to_global(coordinate_system_, origin_delta))
+        
         spatialObject = SpatialObject(
             spatialObject.body,
             coordinate_system_,
-            Velocity(lin_vel_, rot_vel_))
+            Velocity(
+                rotate_to_global(coordinate_system_, lin_vel_),
+                rot_vel_))
 
         render(
             window, 
