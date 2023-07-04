@@ -49,7 +49,15 @@ def run():
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([-0.5, 0.0, 0.5]),
-        magnitude=1)
+        magnitude=0.1)
+    f2 = Force(
+        dir=np.array([0.0, 1.0, 0.0]),
+        pos=np.array([0.5, 0.0, -0.5]),
+        magnitude=0.1)
+    f3 = Force(
+        dir=np.array([0.0, 1.0, 0.0]),
+        pos=np.array([0.0, 0.0, 0.0]),
+        magnitude=0.1)
     f1_start = 1
     f1_end = 10
     start = time.time()
@@ -75,7 +83,7 @@ def run():
             f1_ = Force(dir=f1.dir, pos=f1.pos, magnitude=0.0)
 
         rot_axis, rot_angle, rot_vel_ = apply_rot_force(
-            f1_,
+            [f1, f2, f3],
             spatialObject.vel.rot,
             delta_time,
             spatialObject.body)
@@ -85,7 +93,7 @@ def run():
             rot_angle)
 
         origin_delta, lin_vel_ = apply_trans_force(
-            f1_,
+            [f1, f2, f3],
             rotate_to_local(coordinate_system_, spatialObject.vel.lin),
             delta_time,
             spatialObject.body)
@@ -105,8 +113,8 @@ def run():
             shader, 
             VAO, 
             indices, 
-            0, 
-            -15, 
+            -10, 
+            -25, 
             Matrix44.from_matrix33(coordinate_system_.rotation),
             Matrix44.from_translation(Vector3(coordinate_system_.origin)))
 
