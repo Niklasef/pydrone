@@ -49,17 +49,23 @@ def run():
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([-0.5, 0.0, 0.5]),
-        magnitude=0.1)
+        magnitude=3.05)
     f2 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
-        pos=np.array([0.5, 0.0, -0.5]),
-        magnitude=0.1)
+        pos=np.array([0.5, 0.0, 0.5]),
+        magnitude=3.0)
     f3 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
+        pos=np.array([0.5, 0.0, -0.5]),
+        magnitude=3.0)
+    f4 = Force(
+        dir=np.array([0.0, 1.0, 0.0]),
+        pos=np.array([-0.5, 0.0, -0.5]),
+        magnitude=3.05)        
+    g = Force(
+        dir=np.array([0.0, -1.0, 0.0]),
         pos=np.array([0.0, 0.0, 0.0]),
-        magnitude=0.1)
-    f1_start = 1
-    f1_end = 10
+        magnitude=9.81*spatialObject.body.mass)
     start = time.time()
     time_passed = 0
     prev_frame = 0
@@ -77,13 +83,8 @@ def run():
         # print(delta_time)
         #time.sleep(0.002)
 
-        if time_passed > f1_start and time_passed < f1_end:
-            f1_ = Force(dir=f1.dir, pos=f1.pos, magnitude=f1.magnitude)
-        else:
-            f1_ = Force(dir=f1.dir, pos=f1.pos, magnitude=0.0)
-
         rot_axis, rot_angle, rot_vel_ = apply_rot_force(
-            [f1, f2, f3],
+            [f1, f2, f3, f4],
             spatialObject.vel.rot,
             delta_time,
             spatialObject.body)
@@ -93,7 +94,12 @@ def run():
             rot_angle)
 
         origin_delta, lin_vel_ = apply_trans_force(
-            [f1, f2, f3],
+            [f1, f2, f3, f4,
+            Force(
+                dir=rotate_to_local(
+                    coordinate_system_, g.dir),
+                pos=g.pos,
+                magnitude=g.magnitude)],
             rotate_to_local(coordinate_system_, spatialObject.vel.lin),
             delta_time,
             spatialObject.body)
@@ -113,8 +119,8 @@ def run():
             shader, 
             VAO, 
             indices, 
-            -10, 
-            -25, 
+            0,
+            -100,
             Matrix44.from_matrix33(coordinate_system_.rotation),
             Matrix44.from_translation(Vector3(coordinate_system_.origin)))
 
