@@ -6,9 +6,10 @@ Body = namedtuple('Body', 'mass')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
 
-def apply_rot_force(local_forces, rot_vel, time, body):
+def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque):
     inertia = body.mass * (1.0 * 1.0) * (3.0/10.0) #  when force at corner and acting perpendicular to face
     total_torque = sum((np.cross(force.pos, force.dir * force.magnitude) for force in local_forces), start=np.array([0.0, 0.0, 0.0]))
+    total_torque += rot_drag_torque
     rot_acc = total_torque / inertia
 
     rot_vel_delta = rot_acc * time
