@@ -38,3 +38,25 @@ def earth_g_force(body_mass, coordinate_system):
             np.array([0.0, -1.0, 0.0])),
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=9.81 * body_mass)
+
+def lin_air_drag(lin_vel, coordinate_system):
+    C_d = 1.1
+    A = 1.0
+    rho = 1.225
+
+    V = np.linalg.norm(lin_vel)
+    normalized_vel = (-lin_vel) / (V if V > 0 else 1)
+
+    return Force(
+        dir=rotate_to_local(coordinate_system, normalized_vel),
+        pos=np.array([0.0, 0.0, 0.0]),
+        magnitude=0.5 * C_d * A * rho * V**2)
+
+def rot_air_torque(rot_vel):
+    C_d_rot = 0.1  # Coefficient of rotational drag, you might need to adjust this
+    
+    rot_speed = np.linalg.norm(rot_vel)
+    rot_drag_magnitude = 0.5 * C_d_rot * rot_speed**2
+
+    return -rot_vel / (rot_speed if rot_speed > 0 else 1) * rot_drag_magnitude
+

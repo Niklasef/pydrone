@@ -5,7 +5,7 @@ import numpy as np
 from WindowRender import init, render, window_active, end
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
-from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force
+from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 
 
 SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
@@ -79,20 +79,14 @@ def run():
         # print(delta_time)
         #time.sleep(0.002)
 
-        # Calculate the rotational drag torque
-        C_d_rot = 0.1  # Coefficient of rotational drag, you might need to adjust this
-        rot_speed = np.linalg.norm(spatialObject.vel.rot)
-        rot_drag_magnitude = 0.5 * C_d_rot * rot_speed**2
-
-        rot_drag_torque = -spatialObject.vel.rot / (rot_speed if rot_speed > 0 else 1) * rot_drag_magnitude
-
+        rot_air_torque_ = rot_air_torque(spatialObject.vel.rot)
 
         rot_axis, rot_angle, rot_vel_ = apply_rot_force(
             [f1, f2, f3, f4],
             spatialObject.vel.rot,
             delta_time,
             spatialObject.body,
-            rot_drag_torque)
+            rot_air_torque_)
         coordinate_system_ = rotate(
             spatialObject.coordinateSystem,
             rot_axis,
@@ -102,18 +96,12 @@ def run():
             spatialObject.body.mass,
             coordinate_system_)
 
-        C_d = 1.1
-        A = 1.0
-        V = np.linalg.norm(spatialObject.vel.lin)
-        rho = 1.225
-        normalized_vel = (-spatialObject.vel.lin) / (V if V > 0 else 1)
-        lin_air_drag = Force(
-            dir=rotate_to_local(coordinate_system_, normalized_vel),
-            pos=np.array([0.0, 0.0, 0.0]),
-            magnitude=0.5 * C_d * A * rho * V**2)
+        lin_air_drag_ = lin_air_drag(
+            spatialObject.vel.lin,
+            coordinate_system_)
 
         origin_delta, lin_vel_ = apply_trans_force(
-            [f1, f2, f3, f4, g, lin_air_drag],
+            [f1, f2, f3, f4, g, lin_air_drag_],
             rotate_to_local(coordinate_system_, spatialObject.vel.lin),
             delta_time,
             spatialObject.body)
@@ -143,8 +131,7 @@ def run():
     print(spatialObject)
     print("time_passed: " + str(time_passed))
     print("fps: " + str(frame_count / 10.0))
-    print("air_drag: " + str(lin_air_drag))
-    print("V: " + str(V))
+    print("air_drag: " + str(lin_air_drag_))
 
 run()
 end()
