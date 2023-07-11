@@ -34,6 +34,11 @@ indices = np.array([
     3, 2, 6, 6, 7, 3     # Top face
 ], dtype=np.uint32)
 
+def rotate_force_to_local(force, coordinate_system):
+    return Force(
+        rotate_to_local(coordinate_system, force.dir),
+        force.pos,
+        force.magnitude)
 
 def run():
     frame_count = 0
@@ -92,12 +97,12 @@ def run():
             rot_axis,
             rot_angle)
 
-        g = earth_g_force(
-            spatialObject.body.mass,
+        g = rotate_force_to_local(
+            earth_g_force(spatialObject.body.mass),
             coordinate_system_)
 
-        lin_air_drag_ = lin_air_drag(
-            spatialObject.vel.lin,
+        lin_air_drag_ = rotate_force_to_local(
+            lin_air_drag(spatialObject.vel.lin),
             coordinate_system_)
 
         origin_delta, lin_vel_ = apply_trans_force(

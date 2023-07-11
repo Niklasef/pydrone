@@ -31,15 +31,13 @@ def apply_trans_force(local_forces, lin_vel, time, body):
 
     return origin_delta, lin_vel_
 
-def earth_g_force(body_mass, coordinate_system):
+def earth_g_force(body_mass):
     return Force(
-        dir=rotate_to_local(
-            coordinate_system,
-            np.array([0.0, -1.0, 0.0])),
+        dir=np.array([0.0, -1.0, 0.0]),
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=9.81 * body_mass)
 
-def lin_air_drag(lin_vel, coordinate_system):
+def lin_air_drag(lin_vel):
     C_d = 1.1
     A = 1.0
     rho = 1.225
@@ -48,7 +46,7 @@ def lin_air_drag(lin_vel, coordinate_system):
     normalized_vel = (-lin_vel) / (V if V > 0 else 1)
 
     return Force(
-        dir=rotate_to_local(coordinate_system, normalized_vel),
+        dir=normalized_vel,
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=0.5 * C_d * A * rho * V**2)
 
