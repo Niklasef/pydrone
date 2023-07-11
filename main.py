@@ -5,7 +5,7 @@ import numpy as np
 from WindowRender import init, render, window_active, end
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
-from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force
+from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force
 
 
 SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
@@ -98,12 +98,9 @@ def run():
             rot_axis,
             rot_angle)
 
-        g = Force(
-            dir=rotate_to_local(
-                coordinate_system_,
-                np.array([0.0, -1.0, 0.0])),
-            pos=np.array([0.0, 0.0, 0.0]),
-            magnitude=9.81*spatialObject.body.mass)
+        g = earth_g_force(
+            spatialObject.body.mass,
+            coordinate_system_)
 
         C_d = 1.1
         A = 1.0

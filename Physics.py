@@ -1,5 +1,6 @@
 import numpy as np
 from collections import namedtuple
+from CoordinateSystem import rotate_to_local
 
 
 Body = namedtuple('Body', 'mass')
@@ -29,3 +30,11 @@ def apply_trans_force(local_forces, lin_vel, time, body):
     origin_delta = lin_vel_ * time
 
     return origin_delta, lin_vel_
+
+def earth_g_force(body_mass, coordinate_system):
+    return Force(
+        dir=rotate_to_local(
+            coordinate_system,
+            np.array([0.0, -1.0, 0.0])),
+        pos=np.array([0.0, 0.0, 0.0]),
+        magnitude=9.81 * body_mass)
