@@ -1,14 +1,15 @@
 import numpy as np
 from collections import namedtuple
-from CoordinateSystem import rotate_to_local
+from Geometry import length
 
 
 Body = namedtuple('Body', 'mass')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
 
-def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque):
-    inertia = body.mass * (1.0 * 1.0) * (3.0/10.0) #  when force at corner and acting perpendicular to face
+def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque, cube):
+    side_length = length(cube)
+    inertia = body.mass * (side_length ** 2) * (3.0/10.0) #  when force at corner and acting perpendicular to face
     total_torque = sum((np.cross(force.pos, force.dir * force.magnitude) for force in local_forces), start=np.array([0.0, 0.0, 0.0]))
     total_torque += rot_drag_torque
     rot_acc = total_torque / inertia
@@ -37,11 +38,12 @@ def earth_g_force(body_mass):
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=9.81 * body_mass)
 
-def lin_air_drag(lin_vel):
+def lin_air_drag(lin_vel, cube):
     C_d = 1.1
-    A = 1.0
     rho = 1.225
 
+    side_length = length(cube)
+    A = side_length**2
     V = np.linalg.norm(lin_vel)
     normalized_vel = (-lin_vel) / (V if V > 0 else 1)
 
@@ -50,11 +52,13 @@ def lin_air_drag(lin_vel):
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=0.5 * C_d * A * rho * V**2)
 
-def rot_air_torque(rot_vel):
+def rot_air_torque(rot_vel, cube):
     C_d_rot = 0.1  # Coefficient of rotational drag, you might need to adjust this
     
+    side_length = length(cube)
+    area = side_length**2
     rot_speed = np.linalg.norm(rot_vel)
-    rot_drag_magnitude = 0.5 * C_d_rot * rot_speed**2
+    rot_drag_magnitude = 0.5 * C_d_rot * area * rot_speed**2
 
     return -rot_vel / (rot_speed if rot_speed > 0 else 1) * rot_drag_magnitude
 

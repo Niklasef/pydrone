@@ -6,23 +6,26 @@ from WindowRender import init, render, window_active, end
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
+from Geometry import Cube, create_cube
 
 
-SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
+SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel cube')
 
 # Initialize FPS counter variables
 frame_count = 0
 start_time = time.time()
 
+cube = create_cube(1.0)
+
 vertices = np.array([
-    -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
-     0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
-     0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
-    -0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
-    -0.5, -0.5,  0.5,  0.0,  0.0,  -1.0,
-     0.5, -0.5,  0.5,  0.0,  0.0,  -1.0,
-     0.5,  0.5,  0.5,  0.0,  0.0,  -1.0,
-    -0.5,  0.5,  0.5,  0.0,  0.0,  -1.0
+    *cube.left_bottom_inner_corner, 0.0, 0.0, -1.0,
+    *cube.right_bottom_inner_corner, 0.0, 0.0, -1.0,
+    *cube.right_top_inner_corner, 0.0, 0.0, -1.0,
+    *cube.left_top_inner_corner, 0.0, 0.0, -1.0,
+    *cube.left_bottom_outer_corner, 0.0, 0.0, -1.0,
+    *cube.right_bottom_outer_corner, 0.0, 0.0, -1.0,
+    *cube.right_top_outer_corner, 0.0, 0.0, -1.0,
+    *cube.left_top_outer_corner, 0.0, 0.0, -1.0
 ], dtype=np.float32)
 
 indices = np.array([
@@ -50,7 +53,8 @@ def run():
     spatialObject = SpatialObject(
         body,
         coordinateSystem,
-        vel)
+        vel,
+        cube)
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([-0.5, 0.0, 0.5]),
@@ -84,14 +88,17 @@ def run():
         # print(delta_time)
         #time.sleep(0.002)
 
-        rot_air_torque_ = rot_air_torque(spatialObject.vel.rot)
+        rot_air_torque_ = rot_air_torque(
+            spatialObject.vel.rot,
+            spatialObject.cube)
 
         rot_axis, rot_angle, rot_vel_ = apply_rot_force(
             [f1, f2, f3, f4],
             spatialObject.vel.rot,
             delta_time,
             spatialObject.body,
-            rot_air_torque_)
+            rot_air_torque_,
+            spatialObject.cube)
         coordinate_system_ = rotate(
             spatialObject.coordinateSystem,
             rot_axis,
@@ -102,7 +109,9 @@ def run():
             coordinate_system_)
 
         lin_air_drag_ = rotate_force_to_local(
-            lin_air_drag(spatialObject.vel.lin),
+            lin_air_drag(
+                spatialObject.vel.lin,
+                spatialObject.cube),
             coordinate_system_)
 
         origin_delta, lin_vel_ = apply_trans_force(
@@ -119,7 +128,8 @@ def run():
             coordinate_system_,
             Velocity(
                 rotate_to_global(coordinate_system_, lin_vel_),
-                rot_vel_))
+                rot_vel_),
+            spatialObject.cube)
 
         render(
             window, 
