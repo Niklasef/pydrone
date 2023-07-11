@@ -1,3 +1,22 @@
+### TODO: ###
+# Simple Manual Sim (1m)
+# - keyboard input controlling forces
+# - engine module with side forces
+# - improved lighting with better normals
+# - drone module
+# - complex shapes
+#_____________________________
+# CFD calculated air drags (1-2m)
+#_____________________________
+# AI learning to fly sim (1-3m)
+#_____________________________
+# use AI model in DIY mini drone using IoT  (1-2m)
+#_____________________________
+# drone fleet interaction (2-4m)
+#_____________________________
+
+
+
 from collections import namedtuple
 import time
 import os
