@@ -26,3 +26,7 @@ def create_cube(length):
 
 def length(cube):
     return np.linalg.norm(cube.right_top_inner_corner - cube.left_top_inner_corner)
+
+def area(cube):
+    cube_length = length(cube)
+    return cube_length ** 2

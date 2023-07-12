@@ -25,7 +25,7 @@ from WindowRender import init, render, window_active, end
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
-from Geometry import Cube, create_cube
+from Geometry import Cube, create_cube, area
 
 
 SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
@@ -106,9 +106,11 @@ def run():
         # print(delta_time)
         #time.sleep(0.002)
 
+        cube_area = area(spatialObject.body.cube)
+
         rot_air_torque_ = rot_air_torque(
             spatialObject.vel.rot,
-            spatialObject.body.cube)
+            cube_area)
 
         rot_axis, rot_angle, rot_vel_ = apply_rot_force(
             [f1, f2, f3, f4],
@@ -116,7 +118,7 @@ def run():
             delta_time,
             spatialObject.body,
             rot_air_torque_,
-            spatialObject.body.cube)
+            cube_area)
         coordinate_system_ = rotate(
             spatialObject.coordinateSystem,
             rot_axis,
@@ -129,7 +131,7 @@ def run():
         lin_air_drag_ = rotate_force_to_local(
             lin_air_drag(
                 spatialObject.vel.lin,
-                spatialObject.body.cube),
+                cube_area),
             coordinate_system_)
 
         origin_delta, lin_vel_ = apply_trans_force(
