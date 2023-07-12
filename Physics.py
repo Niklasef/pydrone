@@ -3,7 +3,7 @@ from collections import namedtuple
 from Geometry import length
 
 
-Body = namedtuple('Body', 'mass')
+Body = namedtuple('Body', 'mass cube')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
 
