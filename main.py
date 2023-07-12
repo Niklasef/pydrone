@@ -62,6 +62,47 @@ def rotate_force_to_local(force, coordinate_system):
         force.pos,
         force.magnitude)
 
+def rotate_sim(forces, spatialObject, delta_time, rot_air_torque):
+    cube_area = area(spatialObject.body.cube)
+
+    rot_axis, rot_angle, rot_vel_ = apply_rot_force(
+        forces,
+        spatialObject.vel.rot,
+        delta_time,
+        spatialObject.body,
+        rot_air_torque,
+        cube_area)
+    coordinate_system_ = rotate(
+        spatialObject.coordinateSystem,
+        rot_axis,
+        rot_angle)
+
+    return SpatialObject(
+        spatialObject.body,
+        coordinate_system_,
+        Velocity(
+            spatialObject.vel.lin,
+            rot_vel_))
+
+def translate_sim(forces, spatialObject, delta_time):
+    origin_delta, lin_vel_ = apply_trans_force(
+        forces,
+        rotate_to_local(
+            spatialObject.coordinateSystem,
+            spatialObject.vel.lin),
+        delta_time,
+        spatialObject.body)
+    coordinate_system_ = translate(
+        spatialObject.coordinateSystem,
+        rotate_to_global(spatialObject.coordinateSystem, origin_delta))
+
+    return SpatialObject(
+        spatialObject.body,
+        coordinate_system_,
+        Velocity(
+            rotate_to_global(coordinate_system_, lin_vel_),
+            spatialObject.vel.rot))
+
 def run():
     frame_count = 0
     body = Body(mass=1.0, cube=cube)
@@ -112,43 +153,26 @@ def run():
             spatialObject.vel.rot,
             cube_area)
 
-        rot_axis, rot_angle, rot_vel_ = apply_rot_force(
+        spatialObject = rotate_sim(
             [f1, f2, f3, f4],
-            spatialObject.vel.rot,
+            spatialObject,
             delta_time,
-            spatialObject.body,
-            rot_air_torque_,
-            cube_area)
-        coordinate_system_ = rotate(
-            spatialObject.coordinateSystem,
-            rot_axis,
-            rot_angle)
+            rot_air_torque_)
 
         g = rotate_force_to_local(
             earth_g_force(spatialObject.body.mass),
-            coordinate_system_)
+            spatialObject.coordinateSystem)
 
         lin_air_drag_ = rotate_force_to_local(
             lin_air_drag(
                 spatialObject.vel.lin,
                 cube_area),
-            coordinate_system_)
-
-        origin_delta, lin_vel_ = apply_trans_force(
-            [f1, f2, f3, f4, g, lin_air_drag_],
-            rotate_to_local(coordinate_system_, spatialObject.vel.lin),
-            delta_time,
-            spatialObject.body)
-        coordinate_system_ = translate(
-            coordinate_system_,
-            rotate_to_global(coordinate_system_, origin_delta))
+            spatialObject.coordinateSystem)
         
-        spatialObject = SpatialObject(
-            spatialObject.body,
-            coordinate_system_,
-            Velocity(
-                rotate_to_global(coordinate_system_, lin_vel_),
-                rot_vel_))
+        spatialObject = translate_sim(
+            [f1, f2, f3, f4, g, lin_air_drag_],
+            spatialObject,
+            delta_time)
 
         render(
             window, 
@@ -157,8 +181,10 @@ def run():
             indices, 
             0,
             -60,
-            Matrix44.from_matrix33(coordinate_system_.rotation),
-            Matrix44.from_translation(Vector3(coordinate_system_.origin)))
+            Matrix44.from_matrix33(
+                spatialObject.coordinateSystem.rotation),
+            Matrix44.from_translation(
+                Vector3(spatialObject.coordinateSystem.origin)))
 
         frame_count += 1
         time_passed = now - start
