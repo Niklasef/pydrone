@@ -1,6 +1,5 @@
 import numpy as np
 from collections import namedtuple
-from Geometry import length
 
 
 Body = namedtuple('Body', 'mass cube')
