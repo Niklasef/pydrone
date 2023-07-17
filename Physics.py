@@ -30,13 +30,13 @@ def apply_trans_force(local_forces, lin_vel, time, body):
 
     return origin_delta, lin_vel_
 
-def earth_g_force(body_mass):
+def earth_g_force(body_mass, acc=9.81):
     return Force(
         dir=np.array([0.0, -1.0, 0.0]),
         pos=np.array([0.0, 0.0, 0.0]),
-        magnitude=9.81 * body_mass)
+        magnitude=acc * body_mass)
 
-def lin_air_drag(lin_vel, area):
+def lin_air_drag(lin_vel, area, drag_multiplier=1.0):
     C_d = 1.1
     rho = 1.225
 
@@ -46,13 +46,13 @@ def lin_air_drag(lin_vel, area):
     return Force(
         dir=normalized_vel,
         pos=np.array([0.0, 0.0, 0.0]),
-        magnitude=0.5 * C_d * area * rho * V**2)
+        magnitude=0.5 * C_d * area * rho * V**2 * drag_multiplier)
 
-def rot_air_torque(rot_vel, area):
+def rot_air_torque(rot_vel, area, drag_multiplier=1.0):
     C_d_rot = 0.1  # Coefficient of rotational drag, you might need to adjust this
     
     rot_speed = np.linalg.norm(rot_vel)
-    rot_drag_magnitude = 0.5 * C_d_rot * area * rot_speed**2
+    rot_drag_magnitude = 0.5 * C_d_rot * area * rot_speed**2 * drag_multiplier
 
     return -rot_vel / (rot_speed if rot_speed > 0 else 1) * rot_drag_magnitude
 

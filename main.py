@@ -56,6 +56,101 @@ indices = np.array([
     3, 2, 6, 6, 7, 3     # Top face
 ], dtype=np.uint32)
 
+def stop():
+    return [
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, 0.5]),
+            magnitude=0.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, 0.5]),
+            magnitude=0.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, -0.5]),
+            magnitude=0.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, -0.5]),
+            magnitude=0.0)]
+
+def yaw():
+    return [
+        Force(
+            dir=np.array([0.0, 0.0, 1.0]),
+            pos=np.array([-0.5, 0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([0.5, 0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([0.5, -0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, 1.0]),
+            pos=np.array([-0.5, -0.5, 0.0]),
+            magnitude=3.0)]
+
+def forward():
+    return [
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([-0.5, 0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([0.5, 0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([0.5, -0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([-0.5, -0.5, 0.]),
+            magnitude=3.0)]
+
+def pitch():
+    return [
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([-0.5, 0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, -1.0]),
+            pos=np.array([0.5, 0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, 1.0]),
+            pos=np.array([0.5, -0.5, 0.0]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 0.0, 1.0]),
+            pos=np.array([-0.5, -0.5, 0.]),
+            magnitude=3.0)]
+
+def roll():
+    return [
+        Force(
+            dir=np.array([0.0, -1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, -0.5]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, -0.5]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, 0.5]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, -1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, 0.5]),
+            magnitude=3.0)]
+
 def rotate_force_to_local(force, coordinate_system):
     return Force(
         rotate_to_local(coordinate_system, force.dir),
@@ -74,7 +169,9 @@ def rotate_sim(forces, spatialObject, delta_time, rot_air_torque):
         cube_area)
     coordinate_system_ = rotate(
         spatialObject.coordinateSystem,
-        rot_axis,
+        rotate_to_global(
+            spatialObject.coordinateSystem,
+            rot_axis),
         rot_angle)
 
     return SpatialObject(
@@ -114,22 +211,23 @@ def run():
         body,
         coordinateSystem,
         vel)
-    f1 = Force(
-        dir=np.array([0.0, 1.0, 0.0]),
-        pos=np.array([-0.5, 0.0, 0.5]),
-        magnitude=3.05)
-    f2 = Force(
-        dir=np.array([0.0, 1.0, 0.0]),
-        pos=np.array([0.5, 0.0, 0.5]),
-        magnitude=3.0)
-    f3 = Force(
-        dir=np.array([0.0, 1.0, 0.0]),
-        pos=np.array([0.5, 0.0, -0.5]),
-        magnitude=3.0)
-    f4 = Force(
-        dir=np.array([0.0, 1.0, 0.0]),
-        pos=np.array([-0.5, 0.0, -0.5]),
-        magnitude=3.05)
+    forces = [
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, 0.5]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, 0.5]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, -0.5]),
+            magnitude=3.0),
+        Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, -0.5]),
+            magnitude=3.0)]
     start = time.time()
     time_passed = 0
     prev_frame = 0
@@ -137,7 +235,7 @@ def run():
     window, shader, VAO = init(vertices, indices)
 
     # while window_active(window):
-    while time_passed < 10.0:
+    while time_passed < 15.0:
         now = time.time()
         delta_time = now - (prev_frame if prev_frame != 0 else now)
         prev_frame = now
@@ -147,30 +245,52 @@ def run():
         # print(delta_time)
         #time.sleep(0.002)
 
+        if time_passed > 12.7:
+            forces = stop()
+        # yaw right 45
+        if time_passed < 2.6 and time_passed > 2.0:
+            forces = yaw()
+        if time_passed < 4.6 and time_passed > 2.6:
+            forces = forward()
+        # pith down 90
+        if time_passed < 5.9 and time_passed > 4.6:
+            forces = pitch()
+        if time_passed < 7.9 and time_passed > 5.9:
+            forces = forward()
+        # pith down 90
+        if time_passed < 9.2 and time_passed > 7.9:
+            forces = pitch()
+        if time_passed < 11.4 and time_passed > 9.2:
+            forces = forward()
+        #roll left 90 (when upside down)
+        if time_passed < 12.7 and time_passed > 11.4:
+            forces = roll()
         cube_area = area(spatialObject.body.cube)
 
         rot_air_torque_ = rot_air_torque(
             spatialObject.vel.rot,
-            cube_area)
+            cube_area,
+            100.0)
 
         spatialObject = rotate_sim(
-            [f1, f2, f3, f4],
+            forces,
             spatialObject,
             delta_time,
             rot_air_torque_)
 
         g = rotate_force_to_local(
-            earth_g_force(spatialObject.body.mass),
+            earth_g_force(spatialObject.body.mass, 0.0),
             spatialObject.coordinateSystem)
 
         lin_air_drag_ = rotate_force_to_local(
             lin_air_drag(
                 spatialObject.vel.lin,
-                cube_area),
+                cube_area,
+                10.0),
             spatialObject.coordinateSystem)
         
         spatialObject = translate_sim(
-            [f1, f2, f3, f4, g, lin_air_drag_],
+            [*forces, g, lin_air_drag_],
             spatialObject,
             delta_time)
 
@@ -180,7 +300,7 @@ def run():
             VAO, 
             indices, 
             0,
-            -60,
+            -10,
             Matrix44.from_matrix33(
                 spatialObject.coordinateSystem.rotation),
             Matrix44.from_translation(
