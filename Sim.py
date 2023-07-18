@@ -6,7 +6,6 @@ from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_glob
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Geometry import Cube, create_cube, area
-from KeyboardControler import poll_keyboard
 from EngineController import compute_forces
 
 
@@ -79,17 +78,16 @@ def translate_sim(forces, spatial_object, delta_time):
             rotate_to_global(coordinate_system_, lin_vel_),
             spatial_object.vel.rot))
 
-def step_sim(spatial_object, frame_count, prev_frame):
+def step_sim(spatial_object, frame_count, prev_frame, imput):
     now = time.time()
     delta_time = now - (prev_frame if prev_frame != 0 else now)
-    prev_frame = now    
-    pressed = poll_keyboard()
+    prev_frame = now
     
     engine_forces = compute_forces(
-        yaw=pressed['y_rot'],
-        pitch=pressed['x_rot'],
-        roll=pressed['z_rot'],
-        power=pressed['y_trans'],
+        yaw=imput['y_rot'],
+        pitch=imput['x_rot'],
+        roll=imput['z_rot'],
+        power=imput['y_trans'],
         engine_max_force=5,
         rot_mat=spatial_object.coordinateSystem.rotation,
         rot_vel=spatial_object.vel.rot,

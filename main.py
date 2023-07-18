@@ -174,13 +174,15 @@ def run():
     window, shader, VAO = init(vertices, indices)
 
     while window_active(window):
+        imput = poll_keyboard()
         (spatial_object,
             frame_count,
             prev_frame
         ) = step_sim(
             spatial_object,
             frame_count,
-            prev_frame)
+            prev_frame,
+            imput)
 
         render(
             window, 
