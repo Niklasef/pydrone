@@ -1,10 +1,11 @@
 ### TODO: ###
 # Simple Manual Sim (1m)
-# - keyboard input controlling forces
+# X- keyboard input controlling forces
 # - engine module with side forces
-# - improved lighting with better normals
+# - improved lighting with better normals, different colors for each side
 # - drone module
 # - complex shapes
+# (PID-controller, refactor Sim Moduler, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds)
 #_____________________________
 # CFD calculated air drags (1-2m)
 #_____________________________
