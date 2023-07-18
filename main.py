@@ -1,11 +1,13 @@
 ### TODO: ###
 # Simple Manual Sim (1m)
 # X- keyboard input controlling forces
+# X- refactor Sim Module
 # - engine module with side forces
-# - improved lighting with better normals, different colors for each side
-# - drone module
 # - complex shapes
-# (PID-controller, refactor Sim Moduler, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds)
+# - HUD with metrics
+# - drone module
+# - improved lighting with better normals, different colors for each side
+# (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds)
 #_____________________________
 # CFD calculated air drags (1-2m)
 #_____________________________
@@ -28,7 +30,6 @@ from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Geometry import Cube, create_cube, area
 from KeyboardControler import poll_keyboard
-from EngineController import compute_forces
 from Sim import init_sim, step_sim, SpatialObject
 
 
