@@ -26,6 +26,8 @@ from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_glob
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Geometry import Cube, create_cube, area
+from KeyboardControler import poll_keyboard
+from EngineController import compute_forces
 
 
 SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
@@ -234,8 +236,8 @@ def run():
 
     window, shader, VAO = init(vertices, indices)
 
-    # while window_active(window):
-    while time_passed < 15.0:
+    while window_active(window):
+    # while time_passed < 10.0:
         now = time.time()
         delta_time = now - (prev_frame if prev_frame != 0 else now)
         prev_frame = now
@@ -243,54 +245,81 @@ def run():
         # os.system('cls')
         # print(spatialObject)
         # print(delta_time)
-        #time.sleep(0.002)
+        # time.sleep(0.002)
 
-        if time_passed > 12.7:
-            forces = stop()
-        # yaw right 45
-        if time_passed < 2.6 and time_passed > 2.0:
-            forces = yaw()
-        if time_passed < 4.6 and time_passed > 2.6:
-            forces = forward()
-        # pith down 90
-        if time_passed < 5.9 and time_passed > 4.6:
-            forces = pitch()
-        if time_passed < 7.9 and time_passed > 5.9:
-            forces = forward()
-        # pith down 90
-        if time_passed < 9.2 and time_passed > 7.9:
-            forces = pitch()
-        if time_passed < 11.4 and time_passed > 9.2:
-            forces = forward()
-        #roll left 90 (when upside down)
-        if time_passed < 12.7 and time_passed > 11.4:
-            forces = roll()
+        # if time_passed > 12.7:
+        #     forces = stop()
+        # # yaw right 45
+        # if time_passed < 2.6 and time_passed > 2.0:
+        #     forces = yaw()
+        # if time_passed < 4.6 and time_passed > 2.6:
+        #     forces = forward()
+        # # pith down 90
+        # if time_passed < 5.9 and time_passed > 4.6:
+        #     forces = pitch()
+        # if time_passed < 7.9 and time_passed > 5.9:
+        #     forces = forward()
+        # # pith down 90
+        # if time_passed < 9.2 and time_passed > 7.9:
+        #     forces = pitch()
+        # if time_passed < 11.4 and time_passed > 9.2:
+        #     forces = forward()
+        # #roll left 90 (when upside down)
+        # if time_passed < 12.7 and time_passed > 11.4:
+        #     forces = roll()
+        pressed = poll_keyboard()
+        
+        engine_forces = compute_forces(
+            yaw=pressed['y_rot'],
+            pitch=pressed['x_rot'],
+            roll=pressed['z_rot'],
+            power=pressed['y_trans'],
+            engine_max_force=5,
+            rot_mat=spatialObject.coordinateSystem.rotation,
+            rot_vel=spatialObject.vel.rot,
+            mass=spatialObject.body.mass,
+            coordinate_system=spatialObject.coordinateSystem)
+        f1 = Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, 0.5]),
+            magnitude=engine_forces[0])
+        f2 = Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, 0.5]),
+            magnitude=engine_forces[1])
+        f3 = Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([0.5, 0.0, -0.5]),
+            magnitude=engine_forces[2])
+        f4 = Force(
+            dir=np.array([0.0, 1.0, 0.0]),
+            pos=np.array([-0.5, 0.0, -0.5]),
+            magnitude=engine_forces[3])
+
         cube_area = area(spatialObject.body.cube)
 
         rot_air_torque_ = rot_air_torque(
             spatialObject.vel.rot,
-            cube_area,
-            100.0)
+            cube_area)
 
         spatialObject = rotate_sim(
-            forces,
+            [f1, f2, f3, f4],
             spatialObject,
             delta_time,
             rot_air_torque_)
 
         g = rotate_force_to_local(
-            earth_g_force(spatialObject.body.mass, 0.0),
+            earth_g_force(spatialObject.body.mass, 9.81),
             spatialObject.coordinateSystem)
 
         lin_air_drag_ = rotate_force_to_local(
             lin_air_drag(
                 spatialObject.vel.lin,
-                cube_area,
-                10.0),
+                cube_area),
             spatialObject.coordinateSystem)
         
         spatialObject = translate_sim(
-            [*forces, g, lin_air_drag_],
+            [f1, f2, f3, f4, g, lin_air_drag_],
             spatialObject,
             delta_time)
 
@@ -300,11 +329,13 @@ def run():
             VAO, 
             indices, 
             0,
-            -10,
+            -20,
             Matrix44.from_matrix33(
                 spatialObject.coordinateSystem.rotation),
             Matrix44.from_translation(
                 Vector3(spatialObject.coordinateSystem.origin)))
+
+
 
         frame_count += 1
         time_passed = now - start

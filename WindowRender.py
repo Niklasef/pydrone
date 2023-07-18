@@ -9,7 +9,7 @@ def init(vertices, indices):
     if not glfw.init():
         raise Exception("GLFW can't initialize")
 
-    window = glfw.create_window(720, 720, "Simple Triangle", None, None)
+    window = glfw.create_window(1024, 1024, "Simple Triangle", None, None)
 
     if not window:
         glfw.terminate()
@@ -97,7 +97,7 @@ def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation):
     glUniform3f(glGetUniformLocation(shader, "lightColor"), 0.0, 1.0, 1.0)
     glUniform3f(glGetUniformLocation(shader, "objectColor"), 1.0, 0.5, 0.31)
     
-    projection = matrix44.create_perspective_projection_matrix(45.0, 720.0 / 720.0, 0.1, 100.0)
+    projection = matrix44.create_perspective_projection_matrix(45.0, 1024.0 / 1024.0, 0.1, 100.0)
     view = matrix44.create_from_translation(Vector3([0.0, cam_y, cam_z]))
     
     model = Matrix44.identity()  # Add a model matrix

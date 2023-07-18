@@ -2,6 +2,8 @@ import numpy as np
 from collections import namedtuple
 
 
+EARTH_ACC = 9.81  # gravity force
+
 Body = namedtuple('Body', 'mass cube')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
@@ -30,7 +32,7 @@ def apply_trans_force(local_forces, lin_vel, time, body):
 
     return origin_delta, lin_vel_
 
-def earth_g_force(body_mass, acc=9.81):
+def earth_g_force(body_mass, acc=EARTH_ACC):
     return Force(
         dir=np.array([0.0, -1.0, 0.0]),
         pos=np.array([0.0, 0.0, 0.0]),
