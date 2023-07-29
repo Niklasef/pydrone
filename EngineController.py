@@ -1,5 +1,5 @@
 import numpy as np
-from CoordinateSystem import rotate_to_global
+from CoordinateSystem import rotate_to_global, euler_angles
 from Physics import EARTH_ACC
 
 def compute_roll(rot_mat):
@@ -22,10 +22,14 @@ def inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot
     # Parameters for PD controller
     k_p = 1.0  # proportional gain
     k_d = 1.5  # derivative gain
+
+    (current_pitch, current_roll, current_yaw) = euler_angles(coordinate_system)
+    current_pitch = -current_pitch
+
     if roll == 0:
         # Roll leveling - calculate roll error and adjust roll input
-        current_roll = compute_roll(rot_mat)
-        current_roll = normalize_angle(current_roll)
+        # current_roll = compute_roll(rot_mat)
+        # current_roll = normalize_angle(current_roll)
         roll_error = 0 - current_roll  # error = desired - current, desired roll is 0 for level flight
 
         roll_rate = -rot_vel[2]  # rotational velocity around x-axis
@@ -34,8 +38,8 @@ def inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot
 
     if pitch == 0:
         # Pitch leveling - calculate pitch error and adjust pitch input
-        current_pitch = compute_pitch(rot_mat)
-        current_pitch = normalize_angle(current_pitch)
+        # current_pitch = compute_pitch(rot_mat)
+        # current_pitch = normalize_angle(current_pitch)
         pitch_error = 0 - current_pitch  # error = desired - current, desired pitch is 0 for level flight
 
         pitch_rate = rot_vel[0]  # rotational velocity around y-axis
