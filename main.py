@@ -129,7 +129,7 @@ def roll():
             magnitude=3.0)]
 
 def run():
-    (spatial_object, frame_count, prev_frame) = init_sim()
+    (spatial_object, frame_count, prev_frame, engine_spec) = init_sim()
     vertices = np.array([
         *spatial_object.body.cube.left_bottom_inner_corner, 0.0, 0.0, -1.0,
         *spatial_object.body.cube.right_bottom_inner_corner, 0.0, 0.0, -1.0,
@@ -182,7 +182,8 @@ def run():
             spatial_object,
             frame_count,
             prev_frame,
-            imput)
+            imput,
+            engine_spec)
 
         render(
             window, 

@@ -7,6 +7,7 @@ from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Geometry import Cube, create_cube, area
 from EngineController import compute_forces
+from Engine import init_engine_spec, engine_output
 
 
 SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
@@ -27,7 +28,9 @@ def init_sim():
         coordinate_system,
         vel)
 
-    return (spatial_object, frame_count, prev_frame)
+    engine_spec = init_engine_spec()
+
+    return (spatial_object, frame_count, prev_frame, engine_spec)
 
 def rotate_force_to_local(force, coordinate_system):
     return Force(
@@ -35,7 +38,7 @@ def rotate_force_to_local(force, coordinate_system):
         force.pos,
         force.magnitude)
 
-def rotate_sim(forces, spatialObject, delta_time, rot_air_torque):
+def rotate_sim(forces, spatialObject, delta_time, rot_air_torque, engine_torque):
     cube_area = area(spatialObject.body.cube)
 
     rot_axis, rot_angle, rot_vel_ = apply_rot_force(
@@ -44,7 +47,8 @@ def rotate_sim(forces, spatialObject, delta_time, rot_air_torque):
         delta_time,
         spatialObject.body,
         rot_air_torque,
-        cube_area)
+        cube_area,
+        np.array([0, engine_torque, 0]))
     coordinate_system_ = rotate(
         spatialObject.coordinateSystem,
         rotate_to_global(
@@ -78,49 +82,50 @@ def translate_sim(forces, spatial_object, delta_time):
             rotate_to_global(coordinate_system_, lin_vel_),
             spatial_object.vel.rot))
 
-def step_sim(spatial_object, frame_count, prev_frame, imput):
+def step_sim(spatial_object, frame_count, prev_frame, imput, engine_spec):
     now = time.time()
     delta_time = now - (prev_frame if prev_frame != 0 else now)
     prev_frame = now
     
-    engine_forces = compute_forces(
+    engine_input = compute_forces(
         yaw=imput['y_rot'],
         pitch=imput['x_rot'],
         roll=imput['z_rot'],
         power=imput['y_trans'],
         engine_max_force=5,
         rot_mat=spatial_object.coordinateSystem.rotation,
-        rot_vel=spatial_object.vel.rot,
+        rot_vel= spatial_object.vel.rot,
         mass=spatial_object.body.mass,
         coordinate_system=spatial_object.coordinateSystem)
+    engine_forces = engine_output(engine_spec, engine_input)
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([-0.5, 0.0, 0.5]),
-        magnitude=engine_forces[0])
+        magnitude=engine_forces[0][0])
     f2 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([0.5, 0.0, 0.5]),
-        magnitude=engine_forces[1])
+        magnitude=engine_forces[1][0])
     f3 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([0.5, 0.0, -0.5]),
-        magnitude=engine_forces[2])
+        magnitude=engine_forces[2][0])
     f4 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([-0.5, 0.0, -0.5]),
-        magnitude=engine_forces[3])
+        magnitude=engine_forces[3][0])
 
     cube_area = area(spatial_object.body.cube)
 
     rot_air_torque_ = rot_air_torque(
         spatial_object.vel.rot,
         cube_area)
-
     spatial_object = rotate_sim(
         [f1, f2, f3, f4],
         spatial_object,
         delta_time,
-        rot_air_torque_)
+        rot_air_torque_,
+        engine_forces[0][1] + engine_forces[1][1] + engine_forces[2][1] + engine_forces[3][1])
 
     g = rotate_force_to_local(
         earth_g_force(spatial_object.body.mass, 9.81),
