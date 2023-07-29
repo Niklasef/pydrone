@@ -2,10 +2,10 @@
 # Simple Manual Sim (1m)
 # X- keyboard input controlling forces
 # X- refactor Sim Module
-# - engine module with side forces
+# X- engine module with side forces
 # - complex shapes
 # - HUD with metrics
-# - drone module
+# - drone type (maybe module as well)
 # - improved lighting with better normals, different colors for each side
 # (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds)
 #_____________________________
