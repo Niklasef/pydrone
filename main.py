@@ -9,6 +9,7 @@
 # - drone type (maybe module as well)
 # - improved lighting with better normals, different colors for each side
 # (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes)
+# - self-level mode, angle mode, horizon mode, acro mode 
 #_____________________________
 # CFD calculated air drags (1-2m)
 #_____________________________
