@@ -5,7 +5,8 @@ import numpy as np
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
-from Geometry import Cube, create_cube, area
+# from Cube import Cube, create_cube, area, inertia
+from Block import Block, create_block, area_x, area_y, area_z, inertia
 from EngineController import compute_forces
 from Engine import init_engine_spec, engine_output
 
@@ -16,7 +17,7 @@ def init_sim():
     frame_count = 0
     prev_frame = 0
     delta_time = 0
-    cube = create_cube(1.0)
+    cube = create_block(10.0, 1.0, 1.0)
 
     body = Body(mass=1.0, cube=cube)
     coordinate_system = CoordinateSystem(
@@ -39,7 +40,9 @@ def rotate_force_to_local(force, coordinate_system):
         force.magnitude)
 
 def rotate_sim(forces, spatialObject, delta_time, rot_air_torque, engine_torque):
-    cube_area = area(spatialObject.body.cube)
+    I = inertia(
+        spatialObject.body.cube,
+        spatialObject.body.mass)
 
     rot_axis, rot_angle, rot_vel_ = apply_rot_force(
         forces,
@@ -47,8 +50,8 @@ def rotate_sim(forces, spatialObject, delta_time, rot_air_torque, engine_torque)
         delta_time,
         spatialObject.body,
         rot_air_torque,
-        cube_area,
-        np.array([0, engine_torque, 0]))
+        np.array([0, engine_torque, 0]),
+        I)
     coordinate_system_ = rotate(
         spatialObject.coordinateSystem,
         rotate_to_global(
@@ -115,11 +118,13 @@ def step_sim(spatial_object, frame_count, prev_frame, imput, engine_spec):
         pos=np.array([-0.5, 0.0, -0.5]),
         magnitude=engine_forces[3][0])
 
-    cube_area = area(spatial_object.body.cube)
+    cube_area_x = area_x(spatial_object.body.cube)
+    cube_area_y = area_y(spatial_object.body.cube)
+    cube_area_z = area_z(spatial_object.body.cube)
 
     rot_air_torque_ = rot_air_torque(
         spatial_object.vel.rot,
-        cube_area)
+        cube_area_x)
     spatial_object = rotate_sim(
         [f1, f2, f3, f4],
         spatial_object,
@@ -134,7 +139,9 @@ def step_sim(spatial_object, frame_count, prev_frame, imput, engine_spec):
     lin_air_drag_ = rotate_force_to_local(
         lin_air_drag(
             spatial_object.vel.lin,
-            cube_area),
+            cube_area_x,
+            cube_area_y,
+            cube_area_z),
         spatial_object.coordinateSystem)
     
     spatial_object = translate_sim(

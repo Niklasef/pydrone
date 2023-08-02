@@ -8,8 +8,7 @@ Body = namedtuple('Body', 'mass cube')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
 
-def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque, area, engine_torque):
-    inertia = body.mass * area * (3.0/10.0) #  when force at corner and acting perpendicular to face
+def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque, engine_torque, inertia):
     total_torque = sum((np.cross(force.pos, force.dir * force.magnitude) for force in local_forces), start=np.array([0.0, 0.0, 0.0]))
     total_torque += rot_drag_torque
     total_torque += engine_torque
@@ -39,17 +38,24 @@ def earth_g_force(body_mass, acc=EARTH_ACC):
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=acc * body_mass)
 
-def lin_air_drag(lin_vel, area, drag_multiplier=1.0):
+def lin_air_drag(lin_vel, area_x, area_y, area_z, drag_multiplier=1.0):
     C_d = 1.1
     rho = 1.225
 
-    V = np.linalg.norm(lin_vel)
-    normalized_vel = (-lin_vel) / (V if V > 0 else 1)
+    F_x = 0.5 * C_d * area_x * rho * lin_vel[0]**2 * drag_multiplier
+    F_y = 0.5 * C_d * area_y * rho * lin_vel[1]**2 * drag_multiplier
+    F_z = 0.5 * C_d * area_z * rho * lin_vel[2]**2 * drag_multiplier
+
+    F_x = -F_x if lin_vel[0] > 0 else F_x
+    F_y = -F_y if lin_vel[1] > 0 else F_y
+    F_z = -F_z if lin_vel[2] > 0 else F_z
+    magnitude = np.linalg.norm([F_x, F_y, F_z])
 
     return Force(
-        dir=normalized_vel,
+        dir=np.array([F_x, F_y, F_z])/(magnitude if magnitude > 0.0 else 1.0),
         pos=np.array([0.0, 0.0, 0.0]),
-        magnitude=0.5 * C_d * area * rho * V**2 * drag_multiplier)
+        magnitude=magnitude)
+
 
 def rot_air_torque(rot_vel, area, drag_multiplier=1.0):
     C_d_rot = 0.1  # Coefficient of rotational drag, you might need to adjust this

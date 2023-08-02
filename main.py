@@ -8,7 +8,7 @@
 # - HUD with metrics
 # - drone type (maybe module as well)
 # - improved lighting with better normals, different colors for each side
-# (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes)
+# (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 # - self-level mode, angle mode, horizon mode, acro mode 
 #_____________________________
 # CFD calculated air drags (1-2m)
@@ -30,7 +30,7 @@ from WindowRender import init, render, window_active, end
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
-from Geometry import Cube, create_cube, area
+from Cube import Cube, create_cube, area
 from KeyboardControler import poll_keyboard
 from Sim import init_sim, step_sim, SpatialObject
 

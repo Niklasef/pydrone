@@ -30,3 +30,7 @@ def length(cube):
 def area(cube):
     cube_length = length(cube)
     return cube_length ** 2
+
+def inertia(cube, mass):
+    l = length(cube)
+    return mass * l**2 * (1.0/6.0) #  when force at corner and acting perpendicular to face
