@@ -4,7 +4,8 @@
 # X- refactor Sim Module
 # X- engine module with side forces
 # X- rectangle shape
-# - drone type (maybe module as well)
+# - drone module
+# - multi body drone
 # - cross shapes
 # - HUD with metrics
 # - improved lighting with better normals, different colors for each side
@@ -131,16 +132,16 @@ def roll():
             magnitude=3.0)]
 
 def run():
-    (spatial_object, frame_count, prev_frame, engine_spec) = init_sim()
+    (frame_count, prev_frame, drone) = init_sim()
     vertices = np.array([
-        *spatial_object.body.cube.left_bottom_inner_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.right_bottom_inner_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.right_top_inner_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.left_top_inner_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.left_bottom_outer_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.right_bottom_outer_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.right_top_outer_corner, 0.0, 0.0, -1.0,
-        *spatial_object.body.cube.left_top_outer_corner, 0.0, 0.0, -1.0
+        *drone.spatial_object.body.shape.left_bottom_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.right_bottom_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.right_top_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.left_top_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.left_bottom_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.right_bottom_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.right_top_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_object.body.shape.left_top_outer_corner, 0.0, 0.0, -1.0
     ], dtype=np.float32)
 
     indices = np.array([
@@ -177,15 +178,14 @@ def run():
 
     while window_active(window):
         imput = poll_keyboard()
-        (spatial_object,
-            frame_count,
-            prev_frame
+        (frame_count,
+            prev_frame,
+            drone
         ) = step_sim(
-            spatial_object,
             frame_count,
             prev_frame,
             imput,
-            engine_spec)
+            drone)
 
         render(
             window, 
@@ -195,11 +195,11 @@ def run():
             0,
             -20,
             Matrix44.from_matrix33(
-                spatial_object.coordinateSystem.rotation),
+                drone.spatial_object.coordinateSystem.rotation),
             Matrix44.from_translation(
-                Vector3(spatial_object.coordinateSystem.origin)))
+                Vector3(drone.spatial_object.coordinateSystem.origin)))
 
-    print(spatial_object)
+    print(drone)
     print("frame_count: " + str(frame_count))
 
 run()

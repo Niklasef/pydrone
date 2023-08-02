@@ -5,33 +5,19 @@ import numpy as np
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
-# from Cube import Cube, create_cube, area, inertia
 from Block import Block, create_block, area_x, area_y, area_z, inertia
 from EngineController import compute_forces
 from Engine import init_engine_spec, engine_output
+from Drone import Drone, init_drone
+from SpatialObject import SpatialObject
 
-
-SpatialObject = namedtuple('SpatialObject', 'body coordinateSystem vel')
 
 def init_sim():
     frame_count = 0
     prev_frame = 0
     delta_time = 0
-    cube = create_block(10.0, 1.0, 1.0)
 
-    body = Body(mass=1.0, cube=cube)
-    coordinate_system = CoordinateSystem(
-        origin=np.zeros(3),
-        rotation=np.eye(3))
-    vel = Velocity(lin=np.zeros(3), rot=np.zeros(3))
-    spatial_object = SpatialObject(
-        body,
-        coordinate_system,
-        vel)
-
-    engine_spec = init_engine_spec()
-
-    return (spatial_object, frame_count, prev_frame, engine_spec)
+    return (frame_count, prev_frame, init_drone())
 
 def rotate_force_to_local(force, coordinate_system):
     return Force(
@@ -41,7 +27,7 @@ def rotate_force_to_local(force, coordinate_system):
 
 def rotate_sim(forces, spatialObject, delta_time, rot_air_torque, engine_torque):
     I = inertia(
-        spatialObject.body.cube,
+        spatialObject.body.shape,
         spatialObject.body.mass)
 
     rot_axis, rot_angle, rot_vel_ = apply_rot_force(
@@ -85,7 +71,7 @@ def translate_sim(forces, spatial_object, delta_time):
             rotate_to_global(coordinate_system_, lin_vel_),
             spatial_object.vel.rot))
 
-def step_sim(spatial_object, frame_count, prev_frame, imput, engine_spec):
+def step_sim(frame_count, prev_frame, imput, drone):
     now = time.time()
     delta_time = now - (prev_frame if prev_frame != 0 else now)
     prev_frame = now
@@ -95,12 +81,12 @@ def step_sim(spatial_object, frame_count, prev_frame, imput, engine_spec):
         pitch=imput['x_rot'],
         roll=imput['z_rot'],
         power=imput['y_trans'],
-        engine_max_force=5,
-        rot_mat=spatial_object.coordinateSystem.rotation,
-        rot_vel= spatial_object.vel.rot,
-        mass=spatial_object.body.mass,
-        coordinate_system=spatial_object.coordinateSystem)
-    engine_forces = engine_output(engine_spec, engine_input)
+        engine_max_force=drone.engine_spec.force_curve[-1][1],
+        rot_mat=drone.spatial_object.coordinateSystem.rotation,
+        rot_vel=drone.spatial_object.vel.rot,
+        mass=drone.spatial_object.body.mass,
+        coordinate_system=drone.spatial_object.coordinateSystem)
+    engine_forces = engine_output(drone.engine_spec, engine_input)
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=np.array([-0.5, 0.0, 0.5]),
@@ -118,35 +104,42 @@ def step_sim(spatial_object, frame_count, prev_frame, imput, engine_spec):
         pos=np.array([-0.5, 0.0, -0.5]),
         magnitude=engine_forces[3][0])
 
-    cube_area_x = area_x(spatial_object.body.cube)
-    cube_area_y = area_y(spatial_object.body.cube)
-    cube_area_z = area_z(spatial_object.body.cube)
+    shape_area_x = area_x(drone.spatial_object.body.shape)
+    shape_area_y = area_y(drone.spatial_object.body.shape)
+    shape_area_z = area_z(drone.spatial_object.body.shape)
 
     rot_air_torque_ = rot_air_torque(
-        spatial_object.vel.rot,
-        cube_area_x)
-    spatial_object = rotate_sim(
+        drone.spatial_object.vel.rot,
+        shape_area_x)
+    spatial_object_ = rotate_sim(
         [f1, f2, f3, f4],
-        spatial_object,
+        drone.spatial_object,
         delta_time,
         rot_air_torque_,
         engine_forces[0][1] + engine_forces[1][1] + engine_forces[2][1] + engine_forces[3][1])
 
     g = rotate_force_to_local(
-        earth_g_force(spatial_object.body.mass, 9.81),
-        spatial_object.coordinateSystem)
+        earth_g_force(spatial_object_.body.mass, 9.81),
+        spatial_object_.coordinateSystem)
 
-    lin_air_drag_ = rotate_force_to_local(
-        lin_air_drag(
-            spatial_object.vel.lin,
-            cube_area_x,
-            cube_area_y,
-            cube_area_z),
-        spatial_object.coordinateSystem)
+    lin_air_drag_ = lin_air_drag(
+        rotate_to_local(
+            drone.spatial_object.coordinateSystem,
+            spatial_object_.vel.lin),
+        shape_area_x,
+        shape_area_y,
+        shape_area_z)
     
-    spatial_object = translate_sim(
+    spatial_object_ = translate_sim(
         [f1, f2, f3, f4, g, lin_air_drag_],
-        spatial_object,
+        spatial_object_,
         delta_time)
 
-    return (spatial_object, frame_count+1, prev_frame)
+    drone_ = Drone(
+        spatial_object_,
+        drone.engine_spec)
+
+    return (
+        frame_count+1,
+        prev_frame,
+        drone_)

@@ -4,7 +4,7 @@ from collections import namedtuple
 
 EARTH_ACC = 9.81  # gravity force
 
-Body = namedtuple('Body', 'mass cube')
+Body = namedtuple('Body', 'mass shape')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
 
@@ -39,12 +39,14 @@ def earth_g_force(body_mass, acc=EARTH_ACC):
         magnitude=acc * body_mass)
 
 def lin_air_drag(lin_vel, area_x, area_y, area_z, drag_multiplier=1.0):
-    C_d = 1.1
+    # C_d = 1.1 # for cube
+    C_d_short_side = 1.0
+    C_d_long_side = 2.1
     rho = 1.225
 
-    F_x = 0.5 * C_d * area_x * rho * lin_vel[0]**2 * drag_multiplier
-    F_y = 0.5 * C_d * area_y * rho * lin_vel[1]**2 * drag_multiplier
-    F_z = 0.5 * C_d * area_z * rho * lin_vel[2]**2 * drag_multiplier
+    F_x = 0.5 * C_d_long_side * area_x * rho * lin_vel[0]**2 * drag_multiplier
+    F_y = 0.5 * C_d_long_side * area_y * rho * lin_vel[1]**2 * drag_multiplier
+    F_z = 0.5 * C_d_short_side * area_z * rho * lin_vel[2]**2 * drag_multiplier
 
     F_x = -F_x if lin_vel[0] > 0 else F_x
     F_y = -F_y if lin_vel[1] > 0 else F_y
