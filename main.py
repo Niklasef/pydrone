@@ -4,7 +4,7 @@
 # X- refactor Sim Module
 # X- engine module with side forces
 # X- rectangle shape
-# - drone module
+# X- drone module
 # - multi body drone
 # - cross shapes
 # - HUD with metrics
