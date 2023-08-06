@@ -8,7 +8,11 @@ Body = namedtuple('Body', 'mass shape')
 Force = namedtuple('Force', 'dir pos magnitude')
 Velocity = namedtuple('Velocity', 'lin rot')
 
+<<<<<<< HEAD
 def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque, engine_torque, inertia):
+=======
+def apply_rot_force(local_forces, rot_vel, time, rot_drag_torque, engine_torque, inertia):
+>>>>>>> feature/multi-shape-body
     total_torque = sum((np.cross(force.pos, force.dir * force.magnitude) for force in local_forces), start=np.array([0.0, 0.0, 0.0]))
     total_torque += rot_drag_torque
     total_torque += engine_torque
@@ -23,9 +27,9 @@ def apply_rot_force(local_forces, rot_vel, time, body, rot_drag_torque, engine_t
 
     return rot_axis, rot_angle, rot_vel_
 
-def apply_trans_force(local_forces, lin_vel, time, body):
+def apply_trans_force(local_forces, lin_vel, time, mass):
     total_force = sum((force.magnitude * force.dir for force in local_forces), start=0)
-    lin_acc = total_force / body.mass
+    lin_acc = total_force / mass
     lin_vel_delta = lin_acc * time
     lin_vel_ = lin_vel + lin_vel_delta
     origin_delta = lin_vel_ * time

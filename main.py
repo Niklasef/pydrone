@@ -5,8 +5,10 @@
 # X- engine module with side forces
 # X- rectangle shape
 # X- drone module
-# - multi body drone
+# X- multi body drone
 # - cross shapes
+#   - set bodies in offset angle, and put engine pos in local spatial object coordinate system
+#   - get vertices through spatial object coordinate system
 # - HUD with metrics
 # - improved lighting with better normals, different colors for each side
 # (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
@@ -134,6 +136,7 @@ def roll():
 def run():
     (frame_count, prev_frame, drone) = init_sim()
     vertices = np.array([
+<<<<<<< HEAD
         *drone.spatial_object.body.shape.left_bottom_inner_corner, 0.0, 0.0, -1.0,
         *drone.spatial_object.body.shape.right_bottom_inner_corner, 0.0, 0.0, -1.0,
         *drone.spatial_object.body.shape.right_top_inner_corner, 0.0, 0.0, -1.0,
@@ -142,6 +145,25 @@ def run():
         *drone.spatial_object.body.shape.right_bottom_outer_corner, 0.0, 0.0, -1.0,
         *drone.spatial_object.body.shape.right_top_outer_corner, 0.0, 0.0, -1.0,
         *drone.spatial_object.body.shape.left_top_outer_corner, 0.0, 0.0, -1.0
+=======
+        *drone.spatial_objects[0].body.shape.left_bottom_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.right_bottom_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.right_top_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.left_top_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.left_bottom_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.right_bottom_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.right_top_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[0].body.shape.left_top_outer_corner, 0.0, 0.0, -1.0,
+
+        *drone.spatial_objects[1].body.shape.left_bottom_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.right_bottom_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.right_top_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.left_top_inner_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.left_bottom_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.right_bottom_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.right_top_outer_corner, 0.0, 0.0, -1.0,
+        *drone.spatial_objects[1].body.shape.left_top_outer_corner, 0.0, 0.0, -1.0    
+>>>>>>> feature/multi-shape-body
     ], dtype=np.float32)
 
     indices = np.array([
@@ -150,7 +172,14 @@ def run():
         7, 6, 5, 5, 4, 7,    # Back face
         4, 0, 3, 3, 7, 4,    # Left face
         4, 5, 1, 1, 0, 4,    # Bottom face
-        3, 2, 6, 6, 7, 3     # Top face
+        3, 2, 6, 6, 7, 3,     # Top face
+
+        0+8, 1+8, 2+8, 2+8, 3+8, 0+8,    # Front face
+        1+8, 5+8, 6+8, 6+8, 2+8, 1+8,    # Right face
+        7+8, 6+8, 5+8, 5+8, 4+8, 7+8,    # Back face
+        4+8, 0+8, 3+8, 3+8, 7+8, 4+8,    # Left face
+        4+8, 5+8, 1+8, 1+8, 0+8, 4+8,    # Bottom face
+        3+8, 2+8, 6+8, 6+8, 7+8, 3+8     # Top face
     ], dtype=np.uint32)
 
     forces = [
@@ -195,9 +224,15 @@ def run():
             0,
             -20,
             Matrix44.from_matrix33(
+<<<<<<< HEAD
                 drone.spatial_object.coordinateSystem.rotation),
             Matrix44.from_translation(
                 Vector3(drone.spatial_object.coordinateSystem.origin)))
+=======
+                drone.coordinate_system.rotation),
+            Matrix44.from_translation(
+                Vector3(drone.coordinate_system.origin)))
+>>>>>>> feature/multi-shape-body
 
     print(drone)
     print("frame_count: " + str(frame_count))
