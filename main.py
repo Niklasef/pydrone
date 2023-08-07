@@ -136,16 +136,6 @@ def roll():
 def run():
     (frame_count, prev_frame, drone) = init_sim()
     vertices = np.array([
-<<<<<<< HEAD
-        *drone.spatial_object.body.shape.left_bottom_inner_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.right_bottom_inner_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.right_top_inner_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.left_top_inner_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.left_bottom_outer_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.right_bottom_outer_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.right_top_outer_corner, 0.0, 0.0, -1.0,
-        *drone.spatial_object.body.shape.left_top_outer_corner, 0.0, 0.0, -1.0
-=======
         *drone.spatial_objects[0].body.shape.left_bottom_inner_corner, 0.0, 0.0, -1.0,
         *drone.spatial_objects[0].body.shape.right_bottom_inner_corner, 0.0, 0.0, -1.0,
         *drone.spatial_objects[0].body.shape.right_top_inner_corner, 0.0, 0.0, -1.0,
@@ -163,7 +153,6 @@ def run():
         *drone.spatial_objects[1].body.shape.right_bottom_outer_corner, 0.0, 0.0, -1.0,
         *drone.spatial_objects[1].body.shape.right_top_outer_corner, 0.0, 0.0, -1.0,
         *drone.spatial_objects[1].body.shape.left_top_outer_corner, 0.0, 0.0, -1.0    
->>>>>>> feature/multi-shape-body
     ], dtype=np.float32)
 
     indices = np.array([
@@ -224,15 +213,9 @@ def run():
             0,
             -20,
             Matrix44.from_matrix33(
-<<<<<<< HEAD
-                drone.spatial_object.coordinateSystem.rotation),
-            Matrix44.from_translation(
-                Vector3(drone.spatial_object.coordinateSystem.origin)))
-=======
                 drone.coordinate_system.rotation),
             Matrix44.from_translation(
                 Vector3(drone.coordinate_system.origin)))
->>>>>>> feature/multi-shape-body
 
     print(drone)
     print("frame_count: " + str(frame_count))
