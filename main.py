@@ -101,14 +101,14 @@ def run():
     window, shader, VAO = init(vertices, indices)
 
     while window_active(window):
-        imput = poll_keyboard()
+        input = poll_keyboard()
         (frame_count,
             prev_frame,
             drone
         ) = step_sim(
             frame_count,
             prev_frame,
-            imput,
+            input,
             drone)
 
         render(
