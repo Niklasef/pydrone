@@ -19,11 +19,10 @@ Drone = namedtuple(
     ])
 
 def init_drone():
-    block = create_block(2.0, 0.1, 0.1)
     rot_axis = np.array([0, 1, 0])  # Y-axis
     rot_axis = rot_axis / np.linalg.norm(rot_axis)
 
-    body = Body(mass=0.5, shape=block)
+    block = create_block(2.0, 0.1, 0.1)
     coordinate_system = CoordinateSystem(
         origin=np.zeros(3),
         rotation=np.eye(3))
@@ -32,9 +31,8 @@ def init_drone():
         coordinate_system,
         rot_axis,
         rot_angle)
-    vel = Velocity(lin=np.zeros(3), rot=np.zeros(3))
     spatial_object = SpatialObject(
-        body,
+        Body(mass=0.5, shape=block),
         coordinate_system_)
 
     block_two = create_block(2.0, 0.1, 0.1)
