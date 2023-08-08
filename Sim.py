@@ -147,7 +147,6 @@ def engine_output_sim(drone, input):
         roll=input['z_rot'],
         power=input['y_trans'],
         engine_max_force=drone.engine_spec.force_curve[-1][1],
-        rot_mat=drone.coordinate_system.rotation,
         rot_vel=drone.vel.rot,
         mass=total_mass,
         coordinate_system=drone.coordinate_system)

@@ -4,7 +4,7 @@ from Physics import EARTH_ACC
 from scipy.spatial.transform import Rotation as R
 
 
-def inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot_vel, mass, coordinate_system):
+def inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_vel, mass, coordinate_system):
     # Compute the force needed to counteract gravity
     gravity_force = mass * EARTH_ACC / 4  # distribute among 4 engines
     # Parameters for PD controller
@@ -65,8 +65,8 @@ def inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot
         min(max(engine_forces[3], engine_forces[3] + (engine_max_force-engine_forces[3])*extra_level_percent), engine_max_force)
     ]    
 
-def compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot_vel, mass, coordinate_system):
-    engine_forces = inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot_vel, mass, coordinate_system)
+def compute_forces(yaw, pitch, roll, power, engine_max_force, rot_vel, mass, coordinate_system):
+    engine_forces = inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_vel, mass, coordinate_system)
     gravity_force = mass * EARTH_ACC
     engine_tot_force = sum((f for f in engine_forces), start=0)
     engine_glob_dir = rotate_to_global(coordinate_system, [0, 1, 0])
@@ -74,6 +74,6 @@ def compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot_vel, 
 
     diff =  engine_glob_y_tot_force - gravity_force
     if power == 0 and diff < -0.01 and engine_glob_dir[1] > 0:
-        engine_forces = inner_compute_forces(0, 0, 0, 1, engine_max_force, rot_mat, rot_vel, mass, coordinate_system)
+        engine_forces = inner_compute_forces(0, 0, 0, 1, engine_max_force, rot_vel, mass, coordinate_system)
 
     return np.array([force / engine_max_force for force in engine_forces])

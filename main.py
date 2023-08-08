@@ -72,7 +72,6 @@ def vertices_indices(drone):
 
     return vertices, indices
 
-
 def run():
     (frame_count, prev_frame, drone) = init_sim()
 
