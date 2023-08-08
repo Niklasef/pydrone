@@ -30,7 +30,7 @@ def rotate_to_global(coordinate_system, local_vector):
 
 def rotate_to_local(coordinate_system, global_vector):
     return matrix44.apply_to_vector(
-        Matrix44.from_matrix33(np.linalg.inv(coordinate_system.rotation)),
+        Matrix44.from_matrix33(coordinate_system.rotation.T), 
         global_vector)
 
 def euler_angles(coordinate_system):
