@@ -44,7 +44,7 @@ def inertia(block, mass):
     I_y = (1/12) * mass * (W**2 + L**2)
     I_z = (1/12) * mass * (W**2 + H**2)
 
-    return [I_x, I_y, I_z]
+    return [I_x, I_y, I_x]
 
 # TODO: refactor to one area function
 def area_x(block):

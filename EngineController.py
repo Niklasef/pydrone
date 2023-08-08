@@ -8,7 +8,7 @@ def inner_compute_forces(yaw, pitch, roll, power, engine_max_force, rot_mat, rot
     # Compute the force needed to counteract gravity
     gravity_force = mass * EARTH_ACC / 4  # distribute among 4 engines
     # Parameters for PD controller
-    k_p = 1.0  # proportional gain
+    k_p = 4.0  # proportional gain
     k_d = 1.5  # derivative gain
 
     (current_pitch, current_roll, current_yaw) = euler_angles(coordinate_system)

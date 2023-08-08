@@ -4,7 +4,7 @@ from collections import namedtuple
 
 Mapping = namedtuple('Mapping', ['axis', 'dir'])
 
-INPUT_MAGNITUDE = 1
+INPUT_MAGNITUDE = 1.0
 
 def poll_keyboard():
     key_mappings = {

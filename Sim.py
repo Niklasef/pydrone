@@ -44,13 +44,15 @@ def rotate_sim(
     total_rot_air_torque = sum(rot_air_torques)
 
     inertias = [(
-        rotate_to_global(
-                so.coordinateSystem,
-            inertia(
-                so.body.shape,
-                so.body.mass)))
+        np.abs(
+            rotate_to_global(
+                    so.coordinateSystem,
+                inertia(
+                    so.body.shape,
+                    so.body.mass))))
         for so
         in drone.spatial_objects]
+
     I_combined = sum(inertias)
 
     rot_axis, rot_angle, rot_vel_ = apply_rot_force(
@@ -152,19 +154,27 @@ def engine_output_sim(drone, input):
     engine_forces = engine_output(drone.engine_spec, engine_input)
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
-        pos=drone.engine_positions[0],
+        pos=rotate_to_global(
+            drone.spatial_objects[1].coordinateSystem,
+            drone.engine_positions[0]),
         magnitude=engine_forces[0][0])
     f2 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
-        pos=drone.engine_positions[1],
+        pos=rotate_to_global(
+            drone.spatial_objects[0].coordinateSystem,
+            drone.engine_positions[1]),
         magnitude=engine_forces[1][0])
     f3 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
-        pos=drone.engine_positions[2],
+        pos=rotate_to_global(
+            drone.spatial_objects[1].coordinateSystem,
+            drone.engine_positions[2]),
         magnitude=engine_forces[2][0])
     f4 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
-        pos=drone.engine_positions[3],
+        pos=rotate_to_global(
+            drone.spatial_objects[0].coordinateSystem,
+            drone.engine_positions[3]),
         magnitude=engine_forces[3][0])
 
     return (
