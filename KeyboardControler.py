@@ -8,14 +8,14 @@ INPUT_MAGNITUDE = 1.0
 
 def poll_keyboard():
     key_mappings = {
-        'a': Mapping('z_rot', -INPUT_MAGNITUDE),
-        'd': Mapping('z_rot', INPUT_MAGNITUDE),
-        's': Mapping('x_rot', -INPUT_MAGNITUDE),
-        'w': Mapping('x_rot', INPUT_MAGNITUDE),
-        'left': Mapping('y_rot', -INPUT_MAGNITUDE),
-        'right': Mapping('y_rot', INPUT_MAGNITUDE),
-        'up': Mapping('y_trans', INPUT_MAGNITUDE),
-        'down': Mapping('y_trans', -INPUT_MAGNITUDE)
+        'left': Mapping('z_rot', -INPUT_MAGNITUDE),
+        'right': Mapping('z_rot', INPUT_MAGNITUDE),
+        'down': Mapping('x_rot', -INPUT_MAGNITUDE),
+        'up': Mapping('x_rot', INPUT_MAGNITUDE),
+        'a': Mapping('y_rot', -INPUT_MAGNITUDE),
+        'd': Mapping('y_rot', INPUT_MAGNITUDE),
+        'w': Mapping('y_trans', INPUT_MAGNITUDE),
+        's': Mapping('y_trans', -INPUT_MAGNITUDE)
     }
 
     pressed_keys = {}
