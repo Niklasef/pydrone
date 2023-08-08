@@ -98,7 +98,7 @@ def run():
     time_passed = 0
     prev_frame = 0
 
-    window, shader, VAO = init(vertices, indices)
+    window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO = init(vertices, indices)
 
     while window_active(window):
         input = poll_keyboard()
@@ -121,7 +121,17 @@ def run():
             Matrix44.from_matrix33(
                 drone.coordinate_system.rotation),
             Matrix44.from_translation(
-                Vector3(drone.coordinate_system.origin)))
+                Vector3(drone.coordinate_system.origin)),
+            box_shader,
+            box_VAO,
+            box_VAO_two,
+            dot_shader,
+            dot_VAO,
+            dot_VBO,
+            0.6 + (input['z_rot']/10.0),
+            -0.8 + (input['x_rot']/10.0),
+            0.6 + (input['y_rot']/10.0),
+            -0.8 + (input['y_trans']/10.0))
 
     print(drone)
     print("frame_count: " + str(frame_count))

@@ -84,9 +84,111 @@ def init(vertices, indices):
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
     
-    return window, shader, VAO
+    # ... Existing code ...
 
-def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation):
+    # Define vertices for the box frame
+    box_vertices = np.array([
+        0.7, -0.7,  # Bottom right
+        0.7, -0.9,  # Top right
+        0.5, -0.9,  # Top left
+        0.5, -0.7   # Bottom left
+    ], dtype=np.float32)
+
+
+    box_indices = np.array([
+        0, 1, 3,
+        1, 2, 3
+    ], dtype=np.uint32)
+
+    # Box shaders
+    box_vertex_shader_src = """
+    #version 330 core
+    layout (location = 0) in vec2 aPos;
+    void main()
+    {
+        gl_Position = vec4(aPos, 0.0, 1.0);
+    }
+    """
+
+    box_fragment_shader_src = """
+    #version 330 core
+    out vec4 FragColor;
+    void main()
+    {
+        FragColor = vec4(1.0, 1.0, 1.0, 1.0); // White color
+    }
+    """
+
+    box_shader = compileProgram(compileShader(box_vertex_shader_src, GL_VERTEX_SHADER), compileShader(box_fragment_shader_src, GL_FRAGMENT_SHADER))
+    box_VAO = glGenVertexArrays(1)
+    glBindVertexArray(box_VAO)
+
+    box_VBO = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, box_VBO)
+    glBufferData(GL_ARRAY_BUFFER, box_vertices.nbytes, box_vertices, GL_STATIC_DRAW)
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
+
+    box_EBO = glGenBuffers(1)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, box_EBO)
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, box_indices.nbytes, box_indices, GL_STATIC_DRAW)
+
+
+
+    box_vertices_two = np.array([
+        -0.5, -0.7,  # Bottom right
+        -0.5, -0.9,  # Top right
+        -0.7, -0.9,  # Top left
+        -0.7, -0.7   # Bottom left
+    ], dtype=np.float32)
+    box_VAO_two = glGenVertexArrays(1)
+    glBindVertexArray(box_VAO_two)    
+    box_VBO_two = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, box_VBO_two)
+    glBufferData(GL_ARRAY_BUFFER, box_vertices_two.nbytes, box_vertices_two, GL_STATIC_DRAW)
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
+
+    box_EBO_two = glGenBuffers(1)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, box_EBO_two)
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, box_indices.nbytes, box_indices, GL_STATIC_DRAW)
+
+
+
+    # Dot shaders
+    dot_vertex_shader_src = """
+    #version 330 core
+    layout (location = 0) in vec2 aPos;
+    void main()
+    {
+        gl_Position = vec4(aPos, 0.0, 1.0);
+    }
+    """
+
+    dot_fragment_shader_src = """
+    #version 330 core
+    out vec4 FragColor;
+    void main()
+    {
+        FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red color
+    }
+    """
+
+    dot_shader = compileProgram(compileShader(dot_vertex_shader_src, GL_VERTEX_SHADER), compileShader(dot_fragment_shader_src, GL_FRAGMENT_SHADER))
+    
+    dot_VAO = glGenVertexArrays(1)
+    glBindVertexArray(dot_VAO)
+    dot_VBO = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, dot_VBO)
+    dot_vertices = np.array([0.0, 0.0], dtype=np.float32)  # Initial position of the dot
+    glBufferData(GL_ARRAY_BUFFER, dot_vertices.nbytes, dot_vertices, GL_STATIC_DRAW)
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
+
+    # Return dot_shader and dot_VAO along with other objects
+    return window,shader, VAO,box_shader, box_VAO, box_VAO_two,dot_shader, dot_VAO, dot_VBO
+
+def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, dot_x, dot_y, dot_two_x, dot_two_y):
     glfw.poll_events()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # Clear the depth buffer bit
     glUseProgram(shader)
@@ -109,7 +211,56 @@ def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation):
 
     glBindVertexArray(VAO)
     glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
+    # glfw.swap_buffers(window)
+
+    # ... Existing code ...
+
+    # Draw 3D content
+    # glBindVertexArray(VAO)
+    # glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
+
+    # Draw 2D box
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glUseProgram(box_shader)
+    glBindVertexArray(box_VAO)
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+    glDisable(GL_BLEND)
+    # Draw 2D box
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glUseProgram(box_shader)
+    glBindVertexArray(box_VAO_two)
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+    glDisable(GL_BLEND)    
+
+    # Disable depth testing for the red dot
+    glDisable(GL_DEPTH_TEST)
+
+    # Draw 2D dot
+    glBindVertexArray(dot_VAO)
+    glBindBuffer(GL_ARRAY_BUFFER, dot_VBO)
+    dot_vertices = np.array([dot_x, dot_y], dtype=np.float32)  # Update the position
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dot_vertices.nbytes, dot_vertices)  # Update the vertex data
+    glUseProgram(dot_shader)
+    glPointSize(10)  # Adjust the size as needed
+    glDrawArrays(GL_POINTS, 0, 1)
+
+    # Draw 2D dot
+    glBindVertexArray(dot_VAO)
+    glBindBuffer(GL_ARRAY_BUFFER, dot_VBO)
+    dot_vertices = np.array([dot_two_x-1.2, dot_two_y], dtype=np.float32)  # Update the position
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dot_vertices.nbytes, dot_vertices)  # Update the vertex data
+    glUseProgram(dot_shader)
+    glPointSize(10)  # Adjust the size as needed
+    glDrawArrays(GL_POINTS, 0, 1)    
+
+
+    # Re-enable depth testing if needed for other objects
+    glEnable(GL_DEPTH_TEST)
+
     glfw.swap_buffers(window)
+
 
 
 def window_active(window):
