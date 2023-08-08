@@ -8,7 +8,7 @@
 # X- multi body drone
 # X- rotatable multi body shapes
 # X- engines distrubuted across multiple shapes
-# - HUD with metrics
+# X- HUD with metrics
 # - improved lighting with better normals, different colors for each side
 # (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 # - self-level mode, angle mode, horizon mode, acro mode 
