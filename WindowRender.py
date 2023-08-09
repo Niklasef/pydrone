@@ -220,13 +220,6 @@ def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation, bo
 
     glBindVertexArray(VAO)
     glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
-    # glfw.swap_buffers(window)
-
-    # ... Existing code ...
-
-    # Draw 3D content
-    # glBindVertexArray(VAO)
-    # glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
 
     # Draw 2D box
     glEnable(GL_BLEND)
