@@ -22,9 +22,11 @@ def init(vertices, indices):
     #version 330 core
     layout (location = 0) in vec3 aPos;
     layout (location = 1) in vec3 aNormal;
+    layout (location = 2) in vec3 color;
 
     out vec3 Normal;
     out vec3 FragPos;
+    out vec3 C;
 
     uniform mat4 model;
     uniform mat4 view;
@@ -35,6 +37,7 @@ def init(vertices, indices):
         gl_Position = projection * view * model * vec4(aPos, 1.0);
         FragPos = vec3(model * vec4(aPos, 1.0));
         Normal = aNormal;
+        C = color;
     }
     """
 
@@ -43,7 +46,8 @@ def init(vertices, indices):
     out vec4 FragColor;
 
     in vec3 Normal;  
-    in vec3 FragPos;  
+    in vec3 FragPos; 
+    in vec3 C; 
 
     uniform vec3 lightPos; 
     uniform vec3 viewPos; 
@@ -62,12 +66,14 @@ def init(vertices, indices):
         float diff = max(dot(norm, lightDir), 0.0);
         vec3 diffuse = diff * lightColor;
 
-        vec3 result = (ambient + diffuse) * objectColor;
-        FragColor = vec4(result, 1.0);
+        vec3 result = (ambient + diffuse) * C;
+        FragColor = vec4(C, 1.0);
     }
     """
 
-    shader = compileProgram(compileShader(vertex_shader_src, GL_VERTEX_SHADER), compileShader(fragment_shader_src, GL_FRAGMENT_SHADER))
+    shader = compileProgram(
+        compileShader(vertex_shader_src, GL_VERTEX_SHADER), 
+        compileShader(fragment_shader_src, GL_FRAGMENT_SHADER))
     VAO = glGenVertexArrays(1)
     glBindVertexArray(VAO)
     
@@ -75,11 +81,14 @@ def init(vertices, indices):
     glBindBuffer(GL_ARRAY_BUFFER, VBO)
     glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
     glEnableVertexAttribArray(0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(0))
     glEnableVertexAttribArray(1)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(12))
+    glEnableVertexAttribArray(2)
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(24))
 
-    
+
+
     EBO = glGenBuffers(1)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)

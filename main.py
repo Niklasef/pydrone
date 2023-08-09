@@ -29,7 +29,7 @@ import time
 import os
 import numpy as np
 from WindowRender import init, render, window_active, end
-from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
+from CoordinateSystem import CoordinateSystem, transform_to_global, rotate, translate, rotate_to_global, rotate_to_local
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Cube import Cube, create_cube, area
@@ -60,10 +60,20 @@ def vertices_indices(drone):
             spatial_object.body.shape.right_top_outer_corner,
             spatial_object.body.shape.left_top_outer_corner,
         ]
-
         for corner in corners:
-            vertices_list.extend(rotate_to_global(spatial_object.coordinateSystem, corner))
+            vertices_list.extend(
+                transform_to_global(spatial_object.coordinateSystem, corner))
             vertices_list.extend([0.0, 0.0, -1.0])
+            if i == 0:
+                vertices_list.extend([1.0, 0.0, 0.0])  # Red for first part
+            elif i == 1:
+                vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
+            elif i == 2:
+                vertices_list.extend([1.0, 1.0, 1.0])  # Green for second part
+            elif i == 3:
+                vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
+ 
+
 
         indices_list.extend([index + i*8 for index in face_indices])
 

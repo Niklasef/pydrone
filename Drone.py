@@ -48,10 +48,27 @@ def init_drone():
         Body(mass=0.5, shape=block_two),
         coordinate_system_two_)
 
+
+    block_three = create_block(1.0, 0.05, 0.05)
+    coordinate_system_three = CoordinateSystem(
+        origin=np.array([0,0,-0.5]),
+        rotation=np.eye(3))
+    spatial_object_three = SpatialObject(
+        Body(mass=0.01, shape=block_three),
+        coordinate_system_three)
+
+    block_four = create_block(0.3, 0.3, 0.3)
+    coordinate_system_four = CoordinateSystem(
+        origin=np.array([0,-0.2,0]),
+        rotation=np.eye(3))
+    spatial_object_four = SpatialObject(
+        Body(mass=0.1, shape=block_four),
+        coordinate_system_four)
+
     engine_spec = init_engine_spec()
 
     return Drone(
-        [spatial_object, spatial_object_two],
+        [spatial_object, spatial_object_two, spatial_object_three, spatial_object_four],
         engine_spec,
         CoordinateSystem(
             origin=np.zeros(3),

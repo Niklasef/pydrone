@@ -28,6 +28,13 @@ def rotate_to_global(coordinate_system, local_vector):
         Matrix44.from_matrix33(coordinate_system.rotation),
         local_vector)
 
+def transform_to_global(coordinate_system, local_vector):
+    # First, apply the rotation to the local vector
+    rotated_vector = rotate_to_global(coordinate_system, local_vector)
+    # Then, add the origin of the coordinate system to translate to global coordinates
+    global_vector = rotated_vector + coordinate_system.origin
+    return global_vector
+
 def rotate_to_local(coordinate_system, global_vector):
     return matrix44.apply_to_vector(
         Matrix44.from_matrix33(coordinate_system.rotation.T), 
