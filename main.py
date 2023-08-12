@@ -12,13 +12,15 @@
 # X- improved lighting with better normals, different colors for each side
 #_____________________________
 # X- xbox controller input
-# - angle mode
+# - PID angle mode
 # - self-level mode, angle mode, horizon mode, acro mode 
 # (PID-controller, Unit tests, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 #_____________________________
-# CFD calculated air drags (1-2m)
-#_____________________________
 # AI learning to fly sim (1-3m)
+# - nav points/ route 
+# - gamify route: off route, time, destination reached 
+#_____________________________
+# CFD calculated air drags (1-2m)
 #_____________________________
 # use AI model in DIY mini drone using IoT  (1-2m)
 #_____________________________
