@@ -10,8 +10,10 @@
 # X- engines distrubuted across multiple shapes
 # X- HUD with metrics
 # X- improved lighting with better normals, different colors for each side
-# (PID-controller, Unit tests, xbox controller input, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
+#_____________________________
+# X- xbox controller input
 # - self-level mode, angle mode, horizon mode, acro mode 
+# (PID-controller, Unit tests, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 #_____________________________
 # CFD calculated air drags (1-2m)
 #_____________________________
@@ -34,6 +36,7 @@ from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Cube import Cube, create_cube, area
 from KeyboardController import poll_keyboard
+from GamepadController import XboxController
 from Sim import init_sim, step_sim, SpatialObject
 
 
@@ -107,8 +110,10 @@ def run():
     prev_frame = 0
 
     window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO = init(vertices, indices)
+    xbox_controller = XboxController()
 
     while window_active(window):
+        gamepad_input = xbox_controller.read()
         input = poll_keyboard()
         (frame_count,
             prev_frame,
@@ -116,7 +121,7 @@ def run():
         ) = step_sim(
             frame_count,
             prev_frame,
-            input,
+            gamepad_input,
             drone)
 
         render(
@@ -136,10 +141,10 @@ def run():
             dot_shader,
             dot_VAO,
             dot_VBO,
-            0.6 + (input['z_rot']/10.0),
-            -0.8 + (input['x_rot']/10.0),
-            0.6 + (input['y_rot']/10.0),
-            -0.8 + (input['y_trans']/10.0))
+            0.6 + (gamepad_input['z_rot']/10.0),
+            -0.8 + (gamepad_input['x_rot']/10.0),
+            0.6 + (gamepad_input['y_rot']/10.0),
+            -0.8 + (gamepad_input['y_trans']/10.0))
 
     print(drone)
     print("frame_count: " + str(frame_count))
