@@ -33,7 +33,7 @@ from CoordinateSystem import CoordinateSystem, transform_to_global, rotate, tran
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Cube import Cube, create_cube, area
-from KeyboardControler import poll_keyboard
+from KeyboardController import poll_keyboard
 from Sim import init_sim, step_sim, SpatialObject
 
 
