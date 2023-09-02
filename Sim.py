@@ -2,11 +2,11 @@ from collections import namedtuple
 import time
 import os
 import numpy as np
-from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local
+from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local, euler_angles
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Block import Block, create_block, area_x, area_y, area_z, inertia
-from EngineController import compute_forces
+from PidEngineController import PidController
 from Engine import init_engine_spec, engine_output
 from Drone import Drone, init_drone
 from SpatialObject import SpatialObject
@@ -17,7 +17,9 @@ def init_sim():
     prev_frame = 0
     delta_time = 0
 
-    return (frame_count, prev_frame, init_drone())
+    pidController = PidController()
+
+    return (frame_count, prev_frame, init_drone(), pidController)
 
 def rotate_force_to_local(force, coordinate_system):
     return Force(
@@ -134,22 +136,25 @@ def translate_sim(forces, drone, delta_time):
             drone.vel.rot),
         drone.engine_positions)
 
-def engine_output_sim(drone, input):
+def engine_output_sim(drone, input, pidController, delta_time):
     total_mass = sum(
         (so.body.mass
             for so
             in drone.spatial_objects),
         start=0.0)
 
-    engine_input = compute_forces(
-        yaw=input['y_rot'],
-        pitch=input['x_rot'],
-        roll=input['z_rot'],
-        power=input['y_trans'],
-        engine_max_force=drone.engine_spec.force_curve[-1][1],
-        rot_vel=drone.vel.rot,
-        mass=total_mass,
-        coordinate_system=drone.coordinate_system)
+    engine_input = pidController.compute_forces(
+        input['y_trans'],
+        drone.vel.lin[1],
+        delta_time if delta_time > 0 else 0.0001,
+        input['x_rot'],
+        euler_angles(drone.coordinate_system)[0],
+        input['z_rot'],
+        euler_angles(drone.coordinate_system)[1],
+        input['y_rot'],
+        -drone.vel.rot[1]
+    )
+    # print(engine_input)
     engine_forces = engine_output(drone.engine_spec, engine_input)
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
@@ -181,14 +186,19 @@ def engine_output_sim(drone, input):
         engine_forces[0][1]
             + engine_forces[1][1]
             + engine_forces[2][1]
-            + engine_forces[3][1])
+            + engine_forces[3][1],
+        pidController)
 
-def step_sim(frame_count, prev_frame, input, drone):
-    now = time.time()
+def step_sim(frame_count, prev_frame, input, drone, pidController):
+    now = time.perf_counter()
     delta_time = now - (prev_frame if prev_frame != 0 else now)
     prev_frame = now
     
-    (engine_forces, engine_torque) = engine_output_sim(drone, input)
+    (engine_forces, engine_torque, pidController) = engine_output_sim(
+        drone,
+        input,
+        pidController,
+        delta_time)
 
     drone_ = rotate_sim(
         engine_forces,
@@ -204,4 +214,5 @@ def step_sim(frame_count, prev_frame, input, drone):
     return (
         frame_count+1,
         prev_frame,
-        drone_)
+        drone_,
+        pidController)

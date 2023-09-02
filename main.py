@@ -15,7 +15,7 @@
 # - self contained executable 
 # - PID angle mode
 # - self-level mode, angle mode, horizon mode, acro mode 
-# (PID-controller, Unit tests, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
+# (ramp up time for motors (1s), PID-controller, Unit tests, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 #_____________________________
 # AI learning to fly sim (1-3m)
 # - nav points/ route 
@@ -88,7 +88,7 @@ def vertices_indices(drone):
     return vertices, indices
 
 def run():
-    (frame_count, prev_frame, drone) = init_sim()
+    (frame_count, prev_frame, drone, pidController) = init_sim()
 
     (vertices, indices) = vertices_indices(drone)
 
@@ -121,12 +121,14 @@ def run():
         input = poll_keyboard()
         (frame_count,
             prev_frame,
-            drone
+            drone,
+            pidController
         ) = step_sim(
             frame_count,
             prev_frame,
             gamepad_input,
-            drone)
+            drone,
+            pidController)
 
         render(
             window, 
