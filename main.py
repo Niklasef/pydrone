@@ -12,10 +12,10 @@
 # X- improved lighting with better normals, different colors for each side
 #_____________________________
 # X- xbox controller input
+# X- PID angle mode
+# X- ramp up time for motors (1s)
 # - self contained executable 
-# - PID angle mode
-# - self-level mode, angle mode, horizon mode, acro mode 
-# (ramp up time for motors (1s), PID-controller, Unit tests, (controll assistant: dissaster recovery, auto hover), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
+# (Unit tests, (controll assistant: dissaster recovery, auto hover/position, self-level mode, horizon mode, acro mode), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 #_____________________________
 # AI learning to fly sim (1-3m)
 # - nav points/ route 
