@@ -112,6 +112,7 @@ def run():
     start = time.time()
     time_passed = 0
     prev_frame = 0
+    engine_input = [0, 0, 0, 0]
 
     window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO = init(vertices, indices)
     xbox_controller = XboxController()
@@ -122,13 +123,15 @@ def run():
         (frame_count,
             prev_frame,
             drone,
-            pidController
+            pidController,
+            engine_input
         ) = step_sim(
             frame_count,
             prev_frame,
             gamepad_input,
             drone,
-            pidController)
+            pidController,
+            engine_input)
 
         render(
             window, 

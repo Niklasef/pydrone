@@ -7,7 +7,7 @@ from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
 from Block import Block, create_block, area_x, area_y, area_z, inertia
 from PidEngineController import PidController
-from Engine import init_engine_spec, engine_output
+from Engine import init_engine_spec, engine_output_with_response
 from Drone import Drone, init_drone
 from SpatialObject import SpatialObject
 
@@ -136,7 +136,12 @@ def translate_sim(forces, drone, delta_time):
             drone.vel.rot),
         drone.engine_positions)
 
-def engine_output_sim(drone, input, pidController, delta_time):
+def engine_output_sim(
+    drone,
+    input,
+    pidController,
+    delta_time,
+    prev_engine_input):
     total_mass = sum(
         (so.body.mass
             for so
@@ -154,8 +159,11 @@ def engine_output_sim(drone, input, pidController, delta_time):
         input['y_rot'],
         -drone.vel.rot[1]
     )
-    # print(engine_input)
-    engine_forces = engine_output(drone.engine_spec, engine_input)
+    engine_forces = engine_output_with_response(
+        drone.engine_spec,
+        prev_engine_input,
+        engine_input,
+        delta_time)
     f1 = Force(
         dir=np.array([0.0, 1.0, 0.0]),
         pos=rotate_to_global(
@@ -187,18 +195,20 @@ def engine_output_sim(drone, input, pidController, delta_time):
             + engine_forces[1][1]
             + engine_forces[2][1]
             + engine_forces[3][1],
-        pidController)
+        pidController,
+        engine_input)
 
-def step_sim(frame_count, prev_frame, input, drone, pidController):
+def step_sim(frame_count, prev_frame, input, drone, pidController, prev_engine_input):
     now = time.perf_counter()
     delta_time = now - (prev_frame if prev_frame != 0 else now)
     prev_frame = now
     
-    (engine_forces, engine_torque, pidController) = engine_output_sim(
+    (engine_forces, engine_torque, pidController, engine_input) = engine_output_sim(
         drone,
         input,
         pidController,
-        delta_time)
+        delta_time,
+        prev_engine_input)
 
     drone_ = rotate_sim(
         engine_forces,
@@ -215,4 +225,5 @@ def step_sim(frame_count, prev_frame, input, drone, pidController):
         frame_count+1,
         prev_frame,
         drone_,
-        pidController)
+        pidController,
+        engine_input)

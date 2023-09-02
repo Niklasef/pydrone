@@ -2,7 +2,10 @@ from collections import namedtuple
 import numpy as np
 
 
-EngineSpec = namedtuple('EngineSpec', ['force_curve', 'torque_curve'])
+EngineSpec = namedtuple('EngineSpec', [
+    'force_curve',
+    'torque_curve',
+    'response_time'])
 EngineOutput = namedtuple('EngineOutput', ['force', 'torque'])
 
 def init_engine_spec():
@@ -20,7 +23,10 @@ def init_engine_spec():
         (0.6, 0.3),
         (0.8, 0.4),
         (1.0, 0.5)])
-    return EngineSpec(force_curve, torque_curve)
+    return EngineSpec(
+        force_curve,
+        torque_curve,
+        1)
 
 def select_point(curve, level):
     lower_points = list(filter(lambda p: p[0] <= level, curve))
@@ -38,6 +44,11 @@ def select_point(curve, level):
 
     return interpolated_value
 
+def interpolate_response_time(start_level, end_level, delta_time, engine_spec):
+    fraction_of_response = delta_time / engine_spec.response_time
+    return start_level + (end_level - start_level) * fraction_of_response
+
+
 def engine_output(engine_spec, input_levels):
     assert input_levels.shape == (4,), "input_levels must be a 1-dimensional array of length 4"
     assert 0 <= input_levels[0] <= 1, "input_level must be between 0 and 1"
@@ -54,6 +65,22 @@ def engine_output(engine_spec, input_levels):
         EngineOutput(forces[2], -torques[2]),
         EngineOutput(forces[3], torques[3])
     ]
+
+def engine_output_with_response(
+    engine_spec,
+    prev_input_levels,
+    input_levels,
+    delta_time):
+    interpolated_levels = np.array([
+        interpolate_response_time(
+            prev_input_levels[i],
+            input_levels[i],
+            delta_time,
+            engine_spec) 
+        for i in range(4)
+    ])
+    return engine_output(engine_spec, interpolated_levels)
+
 
 def engine_max_force(engine_spec):
     return max(engine_spec.force_curve, key=lambda p: p[0])[1]
