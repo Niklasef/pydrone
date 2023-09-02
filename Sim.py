@@ -203,7 +203,11 @@ def step_sim(frame_count, prev_frame, input, drone, pidController, prev_engine_i
     delta_time = now - (prev_frame if prev_frame != 0 else now)
     prev_frame = now
     
-    (engine_forces, engine_torque, pidController, engine_input) = engine_output_sim(
+    (engine_forces,
+        engine_torque,
+        pidController,
+        engine_input
+    ) = engine_output_sim(
         drone,
         input,
         pidController,
