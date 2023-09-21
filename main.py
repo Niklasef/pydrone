@@ -42,7 +42,7 @@ from Cube import Cube, create_cube, area
 from KeyboardController import poll_keyboard
 from GamepadController import XboxController
 from Sim import init_sim, step_sim, SpatialObject
-from NavPoint import NavPoint
+from Navigation import NavPoint
 
 
 def vertices_indices(drone):
