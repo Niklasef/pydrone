@@ -48,7 +48,6 @@ def interpolate_response_time(start_level, end_level, delta_time, engine_spec):
     fraction_of_response = delta_time / engine_spec.response_time
     return start_level + (end_level - start_level) * fraction_of_response
 
-
 def engine_output(engine_spec, input_levels):
     assert input_levels.shape == (4,), "input_levels must be a 1-dimensional array of length 4"
     assert 0 <= input_levels[0] <= 1, "input_level must be between 0 and 1"
