@@ -142,7 +142,6 @@ class PidController:
 
         # Assuming max_yaw_rate defines the maximum rate of change of yaw.
         # This should be determined based on your drone's capability.
-        print(pid_output_yaw)
         pid_output_yaw = np.clip(pid_output_yaw, -self.max_yaw_rate, self.max_yaw_rate)
 
         return pid_output_yaw

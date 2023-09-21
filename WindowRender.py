@@ -5,7 +5,7 @@ import numpy as np
 from pyrr import Matrix44, matrix44, Vector3
 
 
-def init(vertices, indices):
+def init(vertices, indices, static_vertices, static_indices):
     if not glfw.init():
         raise Exception("GLFW can't initialize")
 
@@ -93,7 +93,24 @@ def init(vertices, indices):
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
     
-    # ... Existing code ...
+   # Create Additional VAO, VBO, and EBO
+    static_VAO = glGenVertexArrays(1)
+    glBindVertexArray(static_VAO)
+
+    static_VBO = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, static_VBO)
+    glBufferData(GL_ARRAY_BUFFER, static_vertices.nbytes, static_vertices, GL_STATIC_DRAW)
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(0))
+    glEnableVertexAttribArray(1)
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(12))
+    glEnableVertexAttribArray(2)
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(24))
+
+    static_EBO = glGenBuffers(1)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_EBO)
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_indices.nbytes, static_indices, GL_STATIC_DRAW)
+
 
     # Define vertices for the box frame
     box_vertices = np.array([
@@ -195,9 +212,9 @@ def init(vertices, indices):
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
 
     # Return dot_shader and dot_VAO along with other objects
-    return window,shader, VAO,box_shader, box_VAO, box_VAO_two,dot_shader, dot_VAO, dot_VBO
+    return window,shader, VAO,box_shader, box_VAO, box_VAO_two,dot_shader, dot_VAO, dot_VBO, static_VAO
 
-def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, dot_x, dot_y, dot_two_x, dot_two_y):
+def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, dot_x, dot_y, dot_two_x, dot_two_y, static_VAO, static_indices):
     glfw.poll_events()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # Clear the depth buffer bit
     glUseProgram(shader)
@@ -220,6 +237,14 @@ def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation, bo
 
     glBindVertexArray(VAO)
     glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
+
+    glUseProgram(shader)
+    static_model = Matrix44.identity()  # No rotation and translation
+    glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, static_model)
+
+    glBindVertexArray(static_VAO)
+    glDrawElements(GL_TRIANGLES, len(static_indices), GL_UNSIGNED_INT, None)
+
 
     # Draw 2D box
     glEnable(GL_BLEND)

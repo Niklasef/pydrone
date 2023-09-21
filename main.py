@@ -42,6 +42,7 @@ from Cube import Cube, create_cube, area
 from KeyboardController import poll_keyboard
 from GamepadController import XboxController
 from Sim import init_sim, step_sim, SpatialObject
+from NavPoint import NavPoint
 
 
 def vertices_indices(drone):
@@ -56,7 +57,9 @@ def vertices_indices(drone):
         3, 2, 6, 6, 7, 3     # Top face
     ]
     
-    for i, spatial_object in enumerate(drone.spatial_objects):
+    i = 0
+
+    for _, spatial_object in enumerate(drone.spatial_objects):
         corners = [
             spatial_object.body.shape.left_bottom_inner_corner,
             spatial_object.body.shape.right_bottom_inner_corner,
@@ -81,6 +84,47 @@ def vertices_indices(drone):
                 vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
 
         indices_list.extend([index + i*8 for index in face_indices])
+        i += 1
+
+    vertices = np.array(vertices_list, dtype=np.float32)
+    indices = np.array(indices_list, dtype=np.uint32)
+
+    return vertices, indices
+
+def static_vertices_indices(nav_points):
+    vertices_list = []
+    indices_list = []
+    face_indices = [
+        0, 1, 2, 2, 3, 0,    # Front face
+        1, 5, 6, 6, 2, 1,    # Right face
+        7, 6, 5, 5, 4, 7,    # Back face
+        4, 0, 3, 3, 7, 4,    # Left face
+        4, 5, 1, 1, 0, 4,    # Bottom face
+        3, 2, 6, 6, 7, 3     # Top face
+    ]
+    
+    i = 0
+    size = 0.1
+
+    for _, nav_point in enumerate(nav_points):
+        corners = [
+            np.array([-size,-size,-size] + nav_point.position),
+            np.array([size,-size,-size] + nav_point.position),
+            np.array([-size,size,-size] + nav_point.position),
+            np.array([size,size,-size] + nav_point.position),
+            np.array([-size,-size,size] + nav_point.position),
+            np.array([size,-size,size] + nav_point.position),
+            np.array([-size,size,size] + nav_point.position),
+            np.array([size,size,size] + nav_point.position),
+        ]
+        for corner in corners:
+            vertices_list.extend(
+                transform_to_global(nav_point.coordinate_system, corner))
+            vertices_list.extend([0.0, 0.0, -1.0]) # Normal
+            vertices_list.extend([1.0, 1.0, 1.0])  # White
+
+        indices_list.extend([index + i*8 for index in face_indices])
+        i += 1
 
     vertices = np.array(vertices_list, dtype=np.float32)
     indices = np.array(indices_list, dtype=np.uint32)
@@ -89,8 +133,17 @@ def vertices_indices(drone):
 
 def run():
     (frame_count, prev_frame, drone, pidController) = init_sim()
-
+    nav_points = [
+        NavPoint(
+            coordinate_system=CoordinateSystem(
+                origin=np.array([0, 0, 0]),
+                rotation=np.eye(3)),
+            position=np.array([5, 5, 0]))
+    ]
+    print(nav_points)
     (vertices, indices) = vertices_indices(drone)
+    (static_vertices, static_indices) = static_vertices_indices(nav_points)
+
 
     forces = [
         Force(
@@ -114,7 +167,7 @@ def run():
     prev_frame = 0
     engine_input = [0, 0, 0, 0]
 
-    window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO = init(vertices, indices)
+    window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
     xbox_controller = XboxController()
 
     while window_active(window):
@@ -153,7 +206,9 @@ def run():
             0.6 + (gamepad_input['z_rot']/10.0),
             -0.8 + (gamepad_input['x_rot']/10.0),
             0.6 + (gamepad_input['y_rot']/10.0),
-            -0.8 + (gamepad_input['y_trans']/10.0))
+            -0.8 + (gamepad_input['y_trans']/10.0),
+            static_VAO,
+            static_indices)
 
     print(drone)
     print("frame_count: " + str(frame_count))
