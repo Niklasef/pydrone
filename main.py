@@ -42,7 +42,7 @@ from Cube import Cube, create_cube, area
 from KeyboardController import poll_keyboard
 from GamepadController import XboxController
 from Sim import init_sim, step_sim, SpatialObject
-from Navigation import NavPoint
+from Navigation import NavPoint, nav_error
 
 
 def vertices_indices(drone):
@@ -169,6 +169,12 @@ def run():
 
     window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
     xbox_controller = XboxController()
+    nav_error_ = 0
+    start_nav_point = NavPoint(
+        coordinate_system=CoordinateSystem(
+            origin=np.array([0, 0, 0]),
+            rotation=np.eye(3)),
+        position=np.array([0, 0, 0]))
 
     while window_active(window):
         gamepad_input = xbox_controller.read()
@@ -177,11 +183,12 @@ def run():
             prev_frame,
             drone,
             pidController,
-            engine_input
+            engine_input,
+            delta_time
         ) = step_sim(
             frame_count,
             prev_frame,
-            gamepad_input,
+            input,
             drone,
             pidController,
             engine_input)
@@ -209,6 +216,15 @@ def run():
             -0.8 + (gamepad_input['y_trans']/10.0),
             static_VAO,
             static_indices)
+
+        nav_error_ = nav_error(
+            nav_error_,
+            start_nav_point,
+            nav_points[0],
+            drone,
+            delta_time)
+
+        print(nav_error_)
 
     print(drone)
     print("frame_count: " + str(frame_count))
