@@ -18,8 +18,10 @@
 # (Unit tests, (controll assistant: dissaster recovery, auto hover/position, self-level mode, horizon mode, acro mode), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 #_____________________________
 # AI learning to fly sim (1-3m)
-# - nav points/ route 
-# - gamify route: off route, time, destination reached 
+# X- nav points
+# X- gamify route: off route, time, destination reached 
+# - reinforcment learning, create env with sim step
+# - routes
 #_____________________________
 # CFD calculated air drags (1-2m)
 #_____________________________
