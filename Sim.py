@@ -148,14 +148,15 @@ def engine_output_sim(
             in drone.spatial_objects),
         start=0.0)
 
+    euler_angles_ = euler_angles(drone.coordinate_system)
     engine_input = pidController.compute_forces(
         input['y_trans'],
         drone.vel.lin[1],
         delta_time if delta_time > 0 else 0.0001,
         input['x_rot'],
-        euler_angles(drone.coordinate_system)[0],
+        euler_angles_[0],
         input['z_rot'],
-        euler_angles(drone.coordinate_system)[1],
+        euler_angles_[1],
         input['y_rot'],
         -drone.vel.rot[1]
     )
