@@ -39,7 +39,7 @@ def nav_error(
 
 
     if distance_to_nav_point < 0.5:  # Return early if too close to the nav point to avoid large normalized errors.
-        return acc_error
+        return (acc_error, True)
 
     # print(distance_to_nav_point)
     nav_distance = np.linalg.norm(
@@ -62,4 +62,4 @@ def nav_error(
     combined_error = (distance_to_optimal_path + (heading_weight * heading_error)) * delta_time
     normalized_error = combined_error / nav_distance
     
-    return acc_error + normalized_error
+    return (acc_error + normalized_error, False)

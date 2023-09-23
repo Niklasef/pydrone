@@ -219,14 +219,14 @@ def run():
             static_VAO,
             static_indices)
 
-        nav_error_ = nav_error(
+        (nav_error_, nav_goal_reached) = nav_error(
             nav_error_,
             start_nav_point,
             nav_points[0],
             drone,
             delta_time)
 
-        print(nav_error_)
+        print(nav_error_, nav_goal_reached)
 
     print(drone)
     print("frame_count: " + str(frame_count))
