@@ -20,7 +20,7 @@
 # AI learning to fly sim (1-3m)
 # X- nav points
 # X- gamify route: off route, time, destination reached 
-# - reinforcment learning, create env with sim step
+# - reinforcment learning, create env with sim step, set fps
 # - routes
 #_____________________________
 # CFD calculated air drags (1-2m)
