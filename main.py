@@ -45,6 +45,7 @@ from KeyboardController import poll_keyboard
 from GamepadController import XboxController
 from Sim import init_sim, step_sim, SpatialObject
 from Navigation import NavPoint, nav_error
+from Drone import metrics
 
 
 def vertices_indices(drone):
@@ -190,7 +191,7 @@ def run():
         ) = step_sim(
             frame_count,
             prev_frame,
-            input,
+            gamepad_input,
             drone,
             pidController,
             engine_input)
@@ -219,17 +220,17 @@ def run():
             static_VAO,
             static_indices)
 
-        (nav_error_, nav_goal_reached) = nav_error(
-            nav_error_,
-            start_nav_point,
-            nav_points[0],
-            drone,
-            delta_time)
+        # (nav_error_, nav_goal_reached) = nav_error(
+        #     nav_error_,
+        #     start_nav_point,
+        #     nav_points[0],
+        #     drone,
+        #     delta_time)
 
-        print(nav_error_, nav_goal_reached)
-
-    print(drone)
-    print("frame_count: " + str(frame_count))
+        print(metrics(drone))
+        if delta_time > 0:
+            fps = 1 / delta_time
+            print(f"FPS: {fps:.2f}\n")
 
 run()
 end()

@@ -82,3 +82,31 @@ def init_drone():
             np.array([0.0, 0.0, -(length(block)/2.0)]),
             np.array([0.0, 0.0, -(length(block_two)/2.0)])
         ])
+
+def pretty_vector(label, vector):
+    if isinstance(vector, np.ndarray):
+        # Flatten the array to handle multidimensional arrays properly
+        vector = vector.flatten()
+    formatted_vector = ", ".join(f"{v:.2f}" for v in vector)
+    return f"{label}: [{formatted_vector}]"
+
+def pretty_matrix(label, matrix):
+    if isinstance(matrix, np.ndarray):
+        # Ensure the matrix is two-dimensional and 3x3
+        if matrix.ndim != 2 or matrix.shape[0] != 3 or matrix.shape[1] != 3:
+            return "Invalid matrix dimensions"
+        # Adjust the format to ensure alignment
+        formatted_matrix = "\n  ".join("  ".join(f"{item:6.2f}" for item in row) for row in matrix)
+        return f"{label}:\n [{formatted_matrix}]"
+    else:
+        return "Invalid input: Not a matrix"
+
+def metrics(drone):
+    metrics_output = (
+        pretty_vector('pos', drone.coordinate_system.origin) + "\n" +
+        pretty_matrix('rot', drone.coordinate_system.rotation) + "\n" +
+        pretty_vector('lin vel', drone.vel.lin) + "\n" +
+        pretty_vector('rot vel', drone.vel.rot) + "\n"
+    )
+    return metrics_output
+
