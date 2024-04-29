@@ -58,10 +58,10 @@ def pretty_vector(label, vector):
 def ef_metrics(engine_forces, engine_torque):
     engine_force_metrics = ""
     for i, force in enumerate(engine_forces):
-        # Assuming each force is a namedtuple or object with attributes `dir` and `magnitude`
-        force_vector = force.dir * force.magnitude
-        engine_force_metrics += f"Engine {i+1} Force: {force.magnitude}" + "\n"
-        engine_force_metrics += f"Engine {i+1} Torque: {engine_torque}" + "\n"
+        engine_force_metrics += f"Engine {i+1} Force: {force.magnitude:.3f}" + "\n"
+    for i, force in enumerate(engine_forces):
+        engine_force_metrics += f"Engine {i+1} Torque: {engine_torque:.6f}" + "\n"
+    
     return engine_force_metrics
 
 def vertices_indices(drone):
