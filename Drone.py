@@ -87,7 +87,7 @@ def pretty_vector(label, vector):
     if isinstance(vector, np.ndarray):
         # Flatten the array to handle multidimensional arrays properly
         vector = vector.flatten()
-    formatted_vector = ", ".join(f"{v:.2f}" for v in vector)
+    formatted_vector = ", ".join(f"{v:.3f}" for v in vector)
     return f"{label}: [{formatted_vector}]"
 
 def pretty_matrix(label, matrix):
@@ -96,7 +96,7 @@ def pretty_matrix(label, matrix):
         if matrix.ndim != 2 or matrix.shape[0] != 3 or matrix.shape[1] != 3:
             return "Invalid matrix dimensions"
         # Adjust the format to ensure alignment
-        formatted_matrix = "\n  ".join("  ".join(f"{item:6.2f}" for item in row) for row in matrix)
+        formatted_matrix = "\n  ".join("  ".join(f"{item:6.3f}" for item in row) for row in matrix)
         return f"{label}:\n [{formatted_matrix}]"
     else:
         return "Invalid input: Not a matrix"
@@ -109,4 +109,3 @@ def metrics(drone):
         pretty_vector('rot vel', drone.vel.rot) + "\n"
     )
     return metrics_output
-

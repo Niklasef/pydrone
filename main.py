@@ -48,6 +48,22 @@ from Navigation import NavPoint, nav_error
 from Drone import metrics
 
 
+def pretty_vector(label, vector):
+    if isinstance(vector, np.ndarray):
+        # Flatten the array to handle multidimensional arrays properly
+        vector = vector.flatten()
+    formatted_vector = ", ".join(f"{v:.3f}" for v in vector)
+    return f"{label}: [{formatted_vector}]"
+
+def ef_metrics(engine_forces, engine_torque):
+    engine_force_metrics = ""
+    for i, force in enumerate(engine_forces):
+        # Assuming each force is a namedtuple or object with attributes `dir` and `magnitude`
+        force_vector = force.dir * force.magnitude
+        engine_force_metrics += f"Engine {i+1} Force: {force.magnitude}" + "\n"
+        engine_force_metrics += f"Engine {i+1} Torque: {engine_torque}" + "\n"
+    return engine_force_metrics
+
 def vertices_indices(drone):
     vertices_list = []
     indices_list = []
@@ -187,11 +203,13 @@ def run():
             drone,
             pidController,
             engine_input,
-            delta_time
+            delta_time,
+            engine_forces,
+            engine_torque
         ) = step_sim(
             frame_count,
             prev_frame,
-            gamepad_input,
+            input,
             drone,
             pidController,
             engine_input)
@@ -228,6 +246,7 @@ def run():
         #     delta_time)
 
         print(metrics(drone))
+        print(ef_metrics(engine_forces, engine_torque))
         if delta_time > 0:
             fps = 1 / delta_time
             print(f"FPS: {fps:.2f}\n")

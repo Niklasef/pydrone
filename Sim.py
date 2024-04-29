@@ -232,4 +232,6 @@ def step_sim(frame_count, prev_frame, input, drone, pidController, prev_engine_i
         drone_,
         pidController,
         engine_input,
-        delta_time)
+        delta_time,
+        engine_forces,
+        engine_torque)
