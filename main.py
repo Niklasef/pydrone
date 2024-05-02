@@ -48,21 +48,20 @@ from Navigation import NavPoint, nav_error
 from Drone import metrics
 
 
-def pretty_vector(label, vector):
-    if isinstance(vector, np.ndarray):
-        # Flatten the array to handle multidimensional arrays properly
-        vector = vector.flatten()
-    formatted_vector = ", ".join(f"{v:.3f}" for v in vector)
-    return f"{label}: [{formatted_vector}]"
-
 def ef_metrics(engine_forces, engine_torque):
-    engine_force_metrics = ""
-    for i, force in enumerate(engine_forces):
-        engine_force_metrics += f"Engine {i+1} Force: {force.magnitude:.3f}" + "\n"
-    for i, force in enumerate(engine_forces):
-        engine_force_metrics += f"Engine {i+1} Torque: {engine_torque:.6f}" + "\n"
+    # Assuming engine_forces is a list of Forces where each has a magnitude
+    # and engine_torque is a single value applied uniformly (as your previous context suggests)
+    # Adjust accordingly if engine_torque is actually a list with one entry per engine
     
-    return engine_force_metrics
+    metrics = "Engines\n"
+    metrics += "1\t\t2\n"  # Engine numbers top
+    metrics += f"Force: {engine_forces[0].magnitude:.3f}\tForce: {engine_forces[1].magnitude:.3f}\n"
+    metrics += f"Torq: {engine_torque:.6f}\tTorq: {engine_torque:.6f}\n"
+    metrics += "4\t\t3\n"  # Engine numbers bottom
+    metrics += f"Force: {engine_forces[3].magnitude:.3f}\tForce: {engine_forces[2].magnitude:.3f}\n"
+    metrics += f"Torq: {engine_torque:.6f}\tTorq: {engine_torque:.6f}\n"
+
+    return metrics
 
 def vertices_indices(drone):
     vertices_list = []
@@ -162,7 +161,6 @@ def run():
     print(nav_points)
     (vertices, indices) = vertices_indices(drone)
     (static_vertices, static_indices) = static_vertices_indices(nav_points)
-
 
     forces = [
         Force(
