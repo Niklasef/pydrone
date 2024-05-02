@@ -4,20 +4,24 @@ import numpy as np
 class PidController:
     def __init__(
         self,
+
         kp=200,
         ki=0.1,
         kd=0.01,
         target=0,
         max_vertical_velocity=3.85,
-        kp_pitch=1,
+
+        kp_pitch=1.0,
         ki_pitch=0.01,
         kd_pitch=0.1,
         max_pitch=0.5,
-        kp_roll=1,
+
+        kp_roll=1.0,
         ki_roll=0.01,
         kd_roll=0.1,
         max_roll=0.5,
-        kp_yaw=10,
+
+        kp_yaw=10.0,
         ki_yaw=0.1,
         kd_yaw=0.001):
         self.kp = kp
