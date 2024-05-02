@@ -33,6 +33,7 @@
 
 
 from collections import namedtuple
+import sys
 import time
 import os
 import numpy as np
@@ -47,6 +48,15 @@ from Sim import init_sim, step_sim, SpatialObject
 from Navigation import NavPoint, nav_error
 from Drone import metrics
 
+
+def get_input_method():
+    if len(sys.argv) > 1:
+        input_method = sys.argv[1].lower()  # Get the second argument
+        if input_method == "keyboard":
+            return "keyboard"
+        elif input_method == "gamepad":
+            return "gamepad"
+    return "keyboard"  # Default to keyboard if no argument or unrecognized argument
 
 def ef_metrics(engine_forces, engine_torque):
     # Assuming engine_forces is a list of Forces where each has a magnitude
@@ -150,6 +160,7 @@ def static_vertices_indices(nav_points):
     return vertices, indices
 
 def run():
+    input_method = get_input_method()
     (frame_count, prev_frame, drone, pidController) = init_sim()
     nav_points = [
         NavPoint(
@@ -185,7 +196,7 @@ def run():
     engine_input = [0, 0, 0, 0]
 
     window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
-    xbox_controller = XboxController()
+    gamepad_controller = XboxController()
     nav_error_ = 0
     start_nav_point = NavPoint(
         coordinate_system=CoordinateSystem(
@@ -194,8 +205,10 @@ def run():
         position=np.array([0, 0, 0]))
 
     while window_active(window):
-        gamepad_input = xbox_controller.read()
-        input = poll_keyboard()
+        if input_method == "gamepad":
+            input = gamepad_controller.read()
+        else:
+            input = poll_keyboard()
         (frame_count,
             prev_frame,
             drone,
@@ -229,10 +242,10 @@ def run():
             dot_shader,
             dot_VAO,
             dot_VBO,
-            0.6 + (gamepad_input['z_rot']/10.0),
-            -0.8 + (gamepad_input['x_rot']/10.0),
-            0.6 + (gamepad_input['y_rot']/10.0),
-            -0.8 + (gamepad_input['y_trans']/10.0),
+            0.6 + (input['z_rot']/10.0),
+            -0.8 + (input['x_rot']/10.0),
+            0.6 + (input['y_rot']/10.0),
+            -0.8 + (input['y_trans']/10.0),
             static_VAO,
             static_indices)
 
