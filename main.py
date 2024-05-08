@@ -14,12 +14,12 @@
 # X- xbox controller input
 # X- PID angle mode
 # X- ramp up time for motors (1s)
-# X- self contained executable 
+# X- self contained executable
 # (Unit tests, (controll assistant: dissaster recovery, auto hover/position, self-level mode, horizon mode, acro mode), winds, complex detailed shapes, refactor force type to be single vector not split in magnitude - or possible easy to convert between these two forms? maybe force module?)
 #_____________________________
 # AI learning to fly sim (1-3m)
 # X- nav points
-# X- gamify route: off route, time, destination reached 
+# X- gamify route: off route, time, destination reached
 # - reinforcment learning, create env with sim step, set fps
 # - routes
 #_____________________________
@@ -30,12 +30,12 @@
 # drone fleet interaction (2-4m)
 #_____________________________
 
-
-
 from collections import namedtuple
 import sys
 import time
 import os
+import psutil
+from multiprocessing import Process, Queue, Event
 import numpy as np
 from WindowRender import init, render, window_active, end
 from CoordinateSystem import CoordinateSystem, transform_to_global, rotate, translate, rotate_to_global, rotate_to_local, euler_angles
@@ -48,15 +48,19 @@ from Sim import init_sim, step_sim, SpatialObject
 from Navigation import NavPoint, nav_error
 from Drone import metrics
 
-
 def get_input_method():
     if len(sys.argv) > 1:
         input_method = sys.argv[1].lower()  # Get the second argument
-        if input_method == "keyboard":
+        if input_method == "k":
             return "keyboard"
-        elif input_method == "gamepad":
+        elif input_method == "g":
             return "gamepad"
     return "keyboard"  # Default to keyboard if no argument or unrecognized argument
+
+def run_on_specific_core(core):
+    pid = os.getpid()
+    p = psutil.Process(pid)
+    p.cpu_affinity([core])
 
 def ef_metrics(engine_forces, engine_torque):
     # Assuming engine_forces is a list of Forces where each has a magnitude
@@ -159,8 +163,29 @@ def static_vertices_indices(nav_points):
 
     return vertices, indices
 
-def run():
+def poll_input(input_queue, stop_event):
+    run_on_specific_core(1)
+    prev_frame = 0
     input_method = get_input_method()
+
+    while True:
+        while True:
+            now = time.perf_counter()
+            if prev_frame == 0:
+                prev_frame = now  # Set prev_frame to current time for the first iteration
+            delta_time = now - prev_frame
+            if delta_time >= (1 / 100): # Set fps to 200
+                break
+        prev_frame = now  # Update prev_frame for the next iteration
+
+        if input_method == "gamepad":
+            input = gamepad_controller.read()
+        else:
+            input = poll_keyboard()
+
+        input_queue.put(input)
+
+def run(input_queue, stop_event, render_flag=True):
     (frame_count, prev_frame, drone, pidController) = init_sim()
     nav_points = [
         NavPoint(
@@ -169,9 +194,12 @@ def run():
                 rotation=np.eye(3)),
             position=np.array([5, 5, 0]))
     ]
-    print(nav_points)
+    # print(nav_points)
     (vertices, indices) = vertices_indices(drone)
     (static_vertices, static_indices) = static_vertices_indices(nav_points)
+
+    # Set CPU affinity to core 0
+    run_on_specific_core(0)
 
     forces = [
         Force(
@@ -195,20 +223,27 @@ def run():
     prev_frame = 0
     engine_input = [0, 0, 0, 0]
 
-    window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
-    gamepad_controller = XboxController()
-    nav_error_ = 0
-    start_nav_point = NavPoint(
-        coordinate_system=CoordinateSystem(
-            origin=np.array([0, 0, 0]),
-            rotation=np.eye(3)),
-        position=np.array([0, 0, 0]))
+    if render_flag:  # Check if rendering is enabled
+        window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
+        gamepad_controller = XboxController()
+        nav_error_ = 0
+        start_nav_point = NavPoint(
+            coordinate_system=CoordinateSystem(
+                origin=np.array([0, 0, 0]),
+                rotation=np.eye(3)),
+            position=np.array([0, 0, 0]))
 
-    while window_active(window):
-        if input_method == "gamepad":
-            input = gamepad_controller.read()
-        else:
-            input = poll_keyboard()
+    continue_loop = True
+    input_data = {
+        'z_rot': 0,
+        'x_rot': 0,
+        'y_rot': 0,
+        'y_trans': 0
+    }
+
+    while continue_loop:
+        if not input_queue.empty():
+            input_data = input_queue.get()
         (frame_count,
             prev_frame,
             drone,
@@ -220,41 +255,43 @@ def run():
         ) = step_sim(
             frame_count,
             prev_frame,
-            input,
+            input_data,
             drone,
             pidController,
             engine_input)
 
-        render(
-            window, 
-            shader, 
-            VAO, 
-            indices, 
-            0,
-            -20,
-            Matrix44.from_matrix33(
-                drone.coordinate_system.rotation),
-            Matrix44.from_translation(
-                Vector3(drone.coordinate_system.origin)),
-            box_shader,
-            box_VAO,
-            box_VAO_two,
-            dot_shader,
-            dot_VAO,
-            dot_VBO,
-            0.6 + (input['z_rot']/10.0),
-            -0.8 + (input['x_rot']/10.0),
-            0.6 + (input['y_rot']/10.0),
-            -0.8 + (input['y_trans']/10.0),
-            static_VAO,
-            static_indices)
+        if render_flag:  # Check if rendering is enabled
+            continue_loop = window_active(window)
+            render(
+                window, 
+                shader, 
+                VAO, 
+                indices, 
+                0,
+                -20,
+                Matrix44.from_matrix33(
+                    drone.coordinate_system.rotation),
+                Matrix44.from_translation(
+                    Vector3(drone.coordinate_system.origin)),
+                box_shader,
+                box_VAO,
+                box_VAO_two,
+                dot_shader,
+                dot_VAO,
+                dot_VBO,
+                0.6 + (input_data['z_rot']/10.0),
+                -0.8 + (input_data['x_rot']/10.0),
+                0.6 + (input_data['y_rot']/10.0),
+                -0.8 + (input_data['y_trans']/10.0),
+                static_VAO,
+                static_indices)
 
-        # (nav_error_, nav_goal_reached) = nav_error(
-        #     nav_error_,
-        #     start_nav_point,
-        #     nav_points[0],
-        #     drone,
-        #     delta_time)
+            # (nav_error_, nav_goal_reached) = nav_error(
+            #     nav_error_,
+            #     start_nav_point,
+            #     nav_points[0],
+            #     drone,
+            #     delta_time)
 
         print(metrics(drone))
         print(ef_metrics(engine_forces, engine_torque))
@@ -262,5 +299,36 @@ def run():
             fps = 1 / delta_time
             print(f"FPS: {fps:.2f}\n")
 
-run()
-end()
+    while not stop_event.is_set():  # Loop until stop event is set
+        print("stop event")
+        stop_event.set()
+
+# Usage:
+# To run without rendering:
+# python your_script.py --no-render
+# To run with rendering:
+# python your_script.py
+
+if __name__ == "__main__":
+    render_flag = "--no-render" not in sys.argv  # Check if --no-render flag is present
+
+    input_queue = Queue()  # Create a queue for communication
+    stop_event = Event()  # Create an event to signal the input process to stop
+
+    poll_input_proc = Process(target=poll_input, args=(input_queue, stop_event))
+
+    sim_process = Process(target=run, args=(input_queue, stop_event, render_flag))
+
+    try:
+        poll_input_proc.start()
+        sim_process.start()
+    finally:
+        # Ensure that the input polling process is stopped
+        stop_event.set()
+
+        # Kill all spawned processes
+        kill_all_processes()
+
+        # Join the input polling process (ensure it's properly terminated)
+        poll_input_proc.join(2)
+        sim_proc.join(2)

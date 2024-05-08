@@ -200,10 +200,16 @@ def engine_output_sim(
         engine_input)
 
 def step_sim(frame_count, prev_frame, input, drone, pidController, prev_engine_input):
-    now = time.perf_counter()
-    delta_time = now - (prev_frame if prev_frame != 0 else now)
-    prev_frame = now
-    
+    while True:
+        now = time.perf_counter()
+        if prev_frame == 0:
+            prev_frame = now  # Set prev_frame to current time for the first iteration
+        delta_time = now - prev_frame
+        if delta_time >= (1 / 350): # Set fps to 200
+            break
+
+    prev_frame = now  # Update prev_frame for the next iteration
+
     (engine_forces,
         engine_torque,
         pidController,

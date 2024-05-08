@@ -188,5 +188,6 @@ class PidController:
             thrust_output,
             pitch_output_,
             roll_output_,
-            yaw_output_)
+            yaw_output_,
+        )
 
