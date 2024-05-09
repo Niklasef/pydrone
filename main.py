@@ -174,7 +174,8 @@ def poll_input(input_queue, stop_event):
             if prev_frame == 0:
                 prev_frame = now  # Set prev_frame to current time for the first iteration
             delta_time = now - prev_frame
-            if delta_time >= (1 / 100): # Set fps to 200
+            time.sleep(0.001)
+            if delta_time >= (1 / 100): # Cap fps at 100
                 break
         prev_frame = now  # Update prev_frame for the next iteration
 
@@ -184,6 +185,10 @@ def poll_input(input_queue, stop_event):
             input = poll_keyboard()
 
         input_queue.put(input)
+
+        if delta_time > 0:
+            fps = 1 / delta_time
+            print(f"Input FPS: {fps:.2f}\n")
 
 def run(input_queue, stop_event, render_flag=True):
     (frame_count, prev_frame, drone, pidController) = init_sim()
@@ -297,7 +302,7 @@ def run(input_queue, stop_event, render_flag=True):
         print(ef_metrics(engine_forces, engine_torque))
         if delta_time > 0:
             fps = 1 / delta_time
-            print(f"FPS: {fps:.2f}\n")
+            print(f"Sim FPS: {fps:.2f}\n")
 
     while not stop_event.is_set():  # Loop until stop event is set
         print("stop event")
