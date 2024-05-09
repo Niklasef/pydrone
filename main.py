@@ -48,7 +48,7 @@ from Sim import init_sim, step_sim, SpatialObject
 from Navigation import NavPoint, nav_error
 from Drone import metrics
 
-SimState = namedtuple('SimState', 'delta_time drone')
+SimState = namedtuple('SimState', 'delta_time drone engine_forces, engine_torque')
 
 
 def get_input_method():
@@ -66,10 +66,6 @@ def run_on_specific_core(core):
     p.cpu_affinity([core])
 
 def ef_metrics(engine_forces, engine_torque):
-    # Assuming engine_forces is a list of Forces where each has a magnitude
-    # and engine_torque is a single value applied uniformly (as your previous context suggests)
-    # Adjust accordingly if engine_torque is actually a list with one entry per engine
-    
     metrics = "Engines\n"
     metrics += "1\t\t2\n"  # Engine numbers top
     metrics += f"Force: {engine_forces[0].magnitude:.3f}\tForce: {engine_forces[1].magnitude:.3f}\n"
@@ -178,7 +174,7 @@ def poll_input(input_sim_queue, input_render_queue, stop_event):
                 prev_frame = now  # Set prev_frame to current time for the first iteration
             delta_time = now - prev_frame
             time.sleep(0.001)
-            if delta_time >= (1 / 100): # Cap fps at 100
+            if delta_time >= (1 / 100):
                 break
         prev_frame = now  # Update prev_frame for the next iteration
 
@@ -190,13 +186,13 @@ def poll_input(input_sim_queue, input_render_queue, stop_event):
         input_sim_queue.put(input)
         input_render_queue.put(input)
 
-        if delta_time > 0:
-            fps = 1 / delta_time
-            print(f"Input FPS: {fps:.2f}\n")
+        # if delta_time > 0:
+        #     fps = 1 / delta_time
+        #     print(f"Input FPS: {fps:.2f}\n")
 
 def render_proc(sim_state_queue, input_queue):
     run_on_specific_core(2)
-    while not sim_state_queue.empty():
+    while sim_state_queue.qsize() > 0:
         sim_state = sim_state_queue.get()
 
     nav_points = [
@@ -227,14 +223,13 @@ def render_proc(sim_state_queue, input_queue):
     }
     prev_frame = 0
 
-    time.sleep(3)
+    time.sleep(2)
 
     while True:
         time.sleep(0.001)
-        while not sim_state_queue.empty():
-            print("reading sim state queue")
+        while sim_state_queue.qsize() > 0:
             sim_state = sim_state_queue.get()
-        while not input_queue.empty():
+        while input_queue.qsize() > 0:
             input_data = input_queue.get()
         render(
             window, 
@@ -264,11 +259,10 @@ def render_proc(sim_state_queue, input_queue):
         if prev_frame == 0:
             prev_frame = now  # Set prev_frame to current time for the first iteration
         delta_time = now - prev_frame
-        prev_frame = now  # Update prev_frame for the next iteration
-        if delta_time > 0:
-            fps = 1 / delta_time
-            print(f"Render FPS: {fps:.2f}\n")
-
+        prev_frame = now
+        # if delta_time > 0:
+        #     fps = 1 / delta_time
+        #     print(f"Render FPS: {fps:.2f}\n")
 
         # (nav_error_, nav_goal_reached) = nav_error(
         #     nav_error_,
@@ -277,10 +271,26 @@ def render_proc(sim_state_queue, input_queue):
         #     drone,
         #     delta_time)
 
-def run(input_queue, sim_state_queue, stop_event, render_flag=True):
+def console_proc(sim_state_queue):
+    run_on_specific_core(3)
+    prev_frame = 0
+    while True:
+        while True:
+            now = time.perf_counter()
+            if prev_frame == 0:
+                prev_frame = now
+            delta_time = now - prev_frame
+            if delta_time >= (1 / 3):
+                break
+        prev_frame = now  # Update prev_frame for the next iteration
+        while sim_state_queue.qsize() > 0:
+            sim_state = sim_state_queue.get()
+        print(metrics(sim_state.drone))
+        print(ef_metrics(sim_state.engine_forces, sim_state.engine_torque))
+
+def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event, render_flag=True):
     (frame_count, prev_frame, drone, pidController) = init_sim()
 
-    # Set CPU affinity to core 0
     run_on_specific_core(0)
 
     forces = [
@@ -331,16 +341,18 @@ def run(input_queue, sim_state_queue, stop_event, render_flag=True):
             pidController,
             engine_input)
 
-        sim_state_queue.put(
-            SimState(
-                delta_time,
-                drone))
+        sim_state = SimState(
+            delta_time,
+            drone,
+            engine_forces,
+            engine_torque)
+        if render_flag:
+            render_sim_state_queue.put(sim_state)
+        console_sim_state_queue.put(sim_state)
 
-        print(metrics(drone))
-        print(ef_metrics(engine_forces, engine_torque))
-        if delta_time > 0:
-            fps = 1 / delta_time
-            print(f"Sim FPS: {fps:.2f}\n")
+        # if delta_time > 0:
+        #     fps = 1 / delta_time
+        #     print(f"Sim FPS: {fps:.2f}\n")
 
     while not stop_event.is_set():  # Loop until stop event is set
         print("stop event")
@@ -357,20 +369,21 @@ if __name__ == "__main__":
 
     input_sim_queue = Queue()
     input_render_queue = Queue()
-    sim_state_queue = Queue()
+    render_sim_state_queue = Queue()
+    console_sim_state_queue = Queue()
     stop_event = Event()  # Create an event to signal the input process to stop
 
     poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event))
-
-    sim_process = Process(target=run, args=(input_sim_queue, sim_state_queue, stop_event, render_flag))
-
-    render_process = Process(target=render_proc, args=(sim_state_queue, input_render_queue))
+    sim_process = Process(target=run, args=(input_sim_queue, render_sim_state_queue, console_sim_state_queue, stop_event, render_flag))
+    render_process = Process(target=render_proc, args=(render_sim_state_queue, input_render_queue))
+    console_process = Process(target=console_proc, args=(console_sim_state_queue,))
 
     try:
         poll_input_proc.start()
         sim_process.start()
         if render_flag:
             render_process.start()
+        console_process.start()
     finally:
         # Ensure that the input polling process is stopped
         stop_event.set()
@@ -383,3 +396,4 @@ if __name__ == "__main__":
         sim_process.join(2)
         if render_flag:
             render_process.join(2)
+        console_process.join(2)
