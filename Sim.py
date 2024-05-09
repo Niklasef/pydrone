@@ -4,12 +4,12 @@ import os
 import numpy as np
 from CoordinateSystem import CoordinateSystem, rotate, translate, rotate_to_global, rotate_to_local, euler_angles
 from pyrr import Matrix44, matrix44, Vector3
-from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
-from Block import Block, create_block, area_x, area_y, area_z, inertia
+from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, local_g_force
+from Block import Block, create_block
 from PidEngineController import PidController
 from Engine import init_engine_spec, engine_output_with_response
 from Drone import Drone, init_drone
-from SpatialObject import SpatialObject
+from SpatialObject import SpatialObject, global_rot_air_torque, global_inertia, lin_air_drags, mass
 
 
 def init_sim():
@@ -21,49 +21,19 @@ def init_sim():
 
     return (frame_count, prev_frame, init_drone(), pidController)
 
-def rotate_force_to_local(force, coordinate_system):
-    return Force(
-        rotate_to_local(coordinate_system, force.dir),
-        force.pos,
-        force.magnitude)
-
 def rotate_sim(
-    forces, 
+    engine_forces, 
     drone, 
     delta_time, 
     engine_torque):
 
-    rot_air_torques = [
-        rotate_to_global(
-            so.coordinateSystem,
-            rot_air_torque(
-                rotate_to_local(
-                    so.coordinateSystem,
-                    drone.vel.rot),
-                area_x(so.body.shape)))
-        for so
-        in drone.spatial_objects]
-    total_rot_air_torque = sum(rot_air_torques)
-
-    inertias = [(
-        np.abs(
-            rotate_to_global(
-                    so.coordinateSystem,
-                inertia(
-                    so.body.shape,
-                    so.body.mass))))
-        for so
-        in drone.spatial_objects]
-
-    I_combined = sum(inertias)
-
     rot_axis, rot_angle, rot_vel_ = apply_rot_force(
-        forces,
+        engine_forces,
         drone.vel.rot,
         delta_time,
-        total_rot_air_torque,
+        global_rot_air_torque(drone.spatial_objects, drone.vel.rot),
         np.array([0, engine_torque, 0]),
-        I_combined)
+        global_inertia(drone.spatial_objects))
 
     coordinate_system_ = rotate(
         drone.coordinate_system,
@@ -81,48 +51,22 @@ def rotate_sim(
             rot_vel_),
         drone.engine_positions)
 
-def translate_sim(forces, drone, delta_time):
+def translate_sim(engine_forces, drone, delta_time):
     drone_local_lin_vel = rotate_to_local(
         drone.coordinate_system,
         drone.vel.lin)
 
-    total_mass = sum(
-        (so.body.mass
-            for so
-            in drone.spatial_objects),
-        start=0.0)
-
-    g = rotate_force_to_local(
-        earth_g_force(
-            total_mass,
-            9.81),
-        drone.coordinate_system)
-
-    lin_air_drags_coords = [(
-        lin_air_drag(
-            rotate_to_local(
-                so.coordinateSystem,
-                drone_local_lin_vel),
-            area_x(so.body.shape),
-            area_y(so.body.shape),
-            area_z(so.body.shape)),
-        so.coordinateSystem)
-        for so
-        in drone.spatial_objects]
-
-    lin_air_drags = [
-        Force(
-            rotate_to_global(x[1], x[0].dir),
-            x[0].pos,
-            x[0].magnitude)
-        for x
-        in lin_air_drags_coords]
+    drone_mass = mass(drone.spatial_objects)
 
     origin_delta, lin_vel_ = apply_trans_force(
-        [*forces, *lin_air_drags, g],
+        [
+            *engine_forces,
+            *lin_air_drags(drone.spatial_objects, drone_local_lin_vel),
+            local_g_force(drone.coordinate_system, drone_mass)
+        ],
         drone_local_lin_vel,
         delta_time,
-        total_mass)
+        drone_mass)
     coordinate_system_ = translate(
         drone.coordinate_system,
         rotate_to_global(drone.coordinate_system, origin_delta))

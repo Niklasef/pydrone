@@ -1,5 +1,6 @@
 import numpy as np
 from collections import namedtuple
+from CoordinateSystem import rotate_to_local
 
 
 EARTH_ACC = 9.81  # gravity force
@@ -37,6 +38,19 @@ def earth_g_force(body_mass, acc=EARTH_ACC):
         dir=np.array([0.0, -1.0, 0.0]),
         pos=np.array([0.0, 0.0, 0.0]),
         magnitude=acc * body_mass)
+
+def rotate_force_to_local(force, coordinate_system):
+    return Force(
+        rotate_to_local(coordinate_system, force.dir),
+        force.pos,
+        force.magnitude)
+
+def local_g_force(local_coordinate_system, mass):
+    return rotate_force_to_local(
+        earth_g_force(
+            mass,
+            9.81),
+        local_coordinate_system)
 
 def lin_air_drag(lin_vel, area_x, area_y, area_z, drag_multiplier=1.0):
     # C_d = 1.1 # for cube
