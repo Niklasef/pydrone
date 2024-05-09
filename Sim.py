@@ -205,7 +205,7 @@ def step_sim(frame_count, prev_frame, input, drone, pidController, prev_engine_i
         if prev_frame == 0:
             prev_frame = now  # Set prev_frame to current time for the first iteration
         delta_time = now - prev_frame
-        if delta_time >= (1 / 350): # Set fps to 200
+        if delta_time >= (1 / 350):
             break
 
     prev_frame = now  # Update prev_frame for the next iteration

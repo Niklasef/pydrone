@@ -305,10 +305,6 @@ def run(input_queue, sim_state_queue, stop_event, render_flag=True):
     prev_frame = 0
     engine_input = [0, 0, 0, 0]
 
-    # if render_flag:  # Check if rendering is enabled
-
-
-    continue_loop = True
     input_data = {
         'z_rot': 0,
         'x_rot': 0,
@@ -316,7 +312,7 @@ def run(input_queue, sim_state_queue, stop_event, render_flag=True):
         'y_trans': 0
     }
 
-    while continue_loop:
+    while True:
         if not input_queue.empty():
             input_data = input_queue.get()
         (frame_count,
@@ -339,9 +335,6 @@ def run(input_queue, sim_state_queue, stop_event, render_flag=True):
             SimState(
                 delta_time,
                 drone))
-
-        # if render_flag:  # Check if rendering is enabled
-        #     continue_loop = window_active(window)
 
         print(metrics(drone))
         print(ef_metrics(engine_forces, engine_torque))
