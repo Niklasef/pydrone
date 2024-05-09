@@ -48,6 +48,9 @@ from Sim import init_sim, step_sim, SpatialObject
 from Navigation import NavPoint, nav_error
 from Drone import metrics
 
+SimState = namedtuple('SimState', 'delta_time drone')
+
+
 def get_input_method():
     if len(sys.argv) > 1:
         input_method = sys.argv[1].lower()  # Get the second argument
@@ -163,7 +166,7 @@ def static_vertices_indices(nav_points):
 
     return vertices, indices
 
-def poll_input(input_queue, stop_event):
+def poll_input(input_sim_queue, input_render_queue, stop_event):
     run_on_specific_core(1)
     prev_frame = 0
     input_method = get_input_method()
@@ -184,14 +187,18 @@ def poll_input(input_queue, stop_event):
         else:
             input = poll_keyboard()
 
-        input_queue.put(input)
+        input_sim_queue.put(input)
+        input_render_queue.put(input)
 
         if delta_time > 0:
             fps = 1 / delta_time
             print(f"Input FPS: {fps:.2f}\n")
 
-def run(input_queue, stop_event, render_flag=True):
-    (frame_count, prev_frame, drone, pidController) = init_sim()
+def render_proc(sim_state_queue, input_queue):
+    run_on_specific_core(2)
+    while not sim_state_queue.empty():
+        sim_state = sim_state_queue.get()
+
     nav_points = [
         NavPoint(
             coordinate_system=CoordinateSystem(
@@ -200,8 +207,78 @@ def run(input_queue, stop_event, render_flag=True):
             position=np.array([5, 5, 0]))
     ]
     # print(nav_points)
-    (vertices, indices) = vertices_indices(drone)
+    (vertices, indices) = vertices_indices(sim_state.drone)
     (static_vertices, static_indices) = static_vertices_indices(nav_points)
+
+    window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
+    gamepad_controller = XboxController()
+    nav_error_ = 0
+    start_nav_point = NavPoint(
+        coordinate_system=CoordinateSystem(
+            origin=np.array([0, 0, 0]),
+            rotation=np.eye(3)),
+        position=np.array([0, 0, 0]))
+
+    input_data = {
+        'z_rot': 0,
+        'x_rot': 0,
+        'y_rot': 0,
+        'y_trans': 0
+    }
+    prev_frame = 0
+
+    time.sleep(3)
+
+    while True:
+        time.sleep(0.001)
+        while not sim_state_queue.empty():
+            print("reading sim state queue")
+            sim_state = sim_state_queue.get()
+        while not input_queue.empty():
+            input_data = input_queue.get()
+        render(
+            window, 
+            shader, 
+            VAO, 
+            indices, 
+            0,
+            -20,
+            Matrix44.from_matrix33(
+                sim_state.drone.coordinate_system.rotation),
+            Matrix44.from_translation(
+                Vector3(sim_state.drone.coordinate_system.origin)),
+            box_shader,
+            box_VAO,
+            box_VAO_two,
+            dot_shader,
+            dot_VAO,
+            dot_VBO,
+            0.6 + (input_data['z_rot']/10.0),
+            -0.8 + (input_data['x_rot']/10.0),
+            0.6 + (input_data['y_rot']/10.0),
+            -0.8 + (input_data['y_trans']/10.0),
+            static_VAO,
+            static_indices)
+
+        now = time.perf_counter()
+        if prev_frame == 0:
+            prev_frame = now  # Set prev_frame to current time for the first iteration
+        delta_time = now - prev_frame
+        prev_frame = now  # Update prev_frame for the next iteration
+        if delta_time > 0:
+            fps = 1 / delta_time
+            print(f"Render FPS: {fps:.2f}\n")
+
+
+        # (nav_error_, nav_goal_reached) = nav_error(
+        #     nav_error_,
+        #     start_nav_point,
+        #     nav_points[0],
+        #     drone,
+        #     delta_time)
+
+def run(input_queue, sim_state_queue, stop_event, render_flag=True):
+    (frame_count, prev_frame, drone, pidController) = init_sim()
 
     # Set CPU affinity to core 0
     run_on_specific_core(0)
@@ -228,15 +305,8 @@ def run(input_queue, stop_event, render_flag=True):
     prev_frame = 0
     engine_input = [0, 0, 0, 0]
 
-    if render_flag:  # Check if rendering is enabled
-        window, shader, VAO, box_shader, box_VAO, box_VAO_two, dot_shader, dot_VAO, dot_VBO, static_VAO = init(vertices, indices, static_vertices, static_indices)
-        gamepad_controller = XboxController()
-        nav_error_ = 0
-        start_nav_point = NavPoint(
-            coordinate_system=CoordinateSystem(
-                origin=np.array([0, 0, 0]),
-                rotation=np.eye(3)),
-            position=np.array([0, 0, 0]))
+    # if render_flag:  # Check if rendering is enabled
+
 
     continue_loop = True
     input_data = {
@@ -265,38 +335,13 @@ def run(input_queue, stop_event, render_flag=True):
             pidController,
             engine_input)
 
-        if render_flag:  # Check if rendering is enabled
-            continue_loop = window_active(window)
-            render(
-                window, 
-                shader, 
-                VAO, 
-                indices, 
-                0,
-                -20,
-                Matrix44.from_matrix33(
-                    drone.coordinate_system.rotation),
-                Matrix44.from_translation(
-                    Vector3(drone.coordinate_system.origin)),
-                box_shader,
-                box_VAO,
-                box_VAO_two,
-                dot_shader,
-                dot_VAO,
-                dot_VBO,
-                0.6 + (input_data['z_rot']/10.0),
-                -0.8 + (input_data['x_rot']/10.0),
-                0.6 + (input_data['y_rot']/10.0),
-                -0.8 + (input_data['y_trans']/10.0),
-                static_VAO,
-                static_indices)
+        sim_state_queue.put(
+            SimState(
+                delta_time,
+                drone))
 
-            # (nav_error_, nav_goal_reached) = nav_error(
-            #     nav_error_,
-            #     start_nav_point,
-            #     nav_points[0],
-            #     drone,
-            #     delta_time)
+        # if render_flag:  # Check if rendering is enabled
+        #     continue_loop = window_active(window)
 
         print(metrics(drone))
         print(ef_metrics(engine_forces, engine_torque))
@@ -317,16 +362,22 @@ def run(input_queue, stop_event, render_flag=True):
 if __name__ == "__main__":
     render_flag = "--no-render" not in sys.argv  # Check if --no-render flag is present
 
-    input_queue = Queue()  # Create a queue for communication
+    input_sim_queue = Queue()
+    input_render_queue = Queue()
+    sim_state_queue = Queue()
     stop_event = Event()  # Create an event to signal the input process to stop
 
-    poll_input_proc = Process(target=poll_input, args=(input_queue, stop_event))
+    poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event))
 
-    sim_process = Process(target=run, args=(input_queue, stop_event, render_flag))
+    sim_process = Process(target=run, args=(input_sim_queue, sim_state_queue, stop_event, render_flag))
+
+    render_process = Process(target=render_proc, args=(sim_state_queue, input_render_queue))
 
     try:
         poll_input_proc.start()
         sim_process.start()
+        if render_flag:
+            render_process.start()
     finally:
         # Ensure that the input polling process is stopped
         stop_event.set()
@@ -336,4 +387,6 @@ if __name__ == "__main__":
 
         # Join the input polling process (ensure it's properly terminated)
         poll_input_proc.join(2)
-        sim_proc.join(2)
+        sim_process.join(2)
+        if render_flag:
+            render_process.join(2)
