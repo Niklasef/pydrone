@@ -319,7 +319,8 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
         'z_rot': 0,
         'x_rot': 0,
         'y_rot': 0,
-        'y_trans': 0
+        'y_trans': 0,
+        'debug': []
     }
 
     while True:

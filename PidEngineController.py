@@ -150,6 +150,28 @@ class PidController:
 
         return pid_output_yaw
 
+    def auto_reset_integrals(
+        self,
+        current_roll,
+        current_pitch,
+        current_yaw_rate,
+        roll_input,
+        pitch_input,
+        yaw_input):
+        # Example condition: Reset if the drone is nearly level and stable
+        # Using 0.01 radians (about 0.57 degrees) for roll and pitch,
+        # and 0.01 radians/sec for yaw rate as thresholds for stability
+        if abs(current_roll) < 0.01 \
+            and abs(current_pitch) < 0.01 \
+            and abs(current_yaw_rate) < 0.01\
+            and roll_input == 0 \
+            and pitch_input == 0 \
+            and yaw_input == 0:
+            self.integral_error = 0
+            self.integral_error_roll = 0
+            self.integral_error_pitch = 0
+            self.integral_error_yaw = 0
+
 
     def compute_forces(
         self,
@@ -161,7 +183,22 @@ class PidController:
         roll_input,
         current_roll,
         yaw_input,
-        current_yaw_rate):
+        current_yaw_rate,
+        debug):
+
+        self.auto_reset_integrals(
+            current_roll,
+            current_pitch,
+            current_yaw_rate,
+            roll_input,
+            pitch_input,
+            yaw_input)
+
+        if 0 in debug:
+            self.integral_error = 0
+            self.integral_error_roll = 0
+            self.integral_error_pitch = 0
+            self.integral_error_yaw = 0
 
         thrust_output = self.thrust(
             throttle_input,

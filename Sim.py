@@ -58,12 +58,14 @@ def translate_sim(engine_forces, drone, delta_time):
 
     drone_mass = mass(drone.spatial_objects)
 
+    local_forces = [
+        *engine_forces,
+        *lin_air_drags(drone.spatial_objects, drone_local_lin_vel),
+        local_g_force(drone.coordinate_system, drone_mass)
+    ]
+
     origin_delta, lin_vel_ = apply_trans_force(
-        [
-            *engine_forces,
-            *lin_air_drags(drone.spatial_objects, drone_local_lin_vel),
-            local_g_force(drone.coordinate_system, drone_mass)
-        ],
+        local_forces,
         drone_local_lin_vel,
         delta_time,
         drone_mass)
@@ -102,7 +104,8 @@ def engine_output_sim(
         input['z_rot'],
         euler_angles_[1],
         input['y_rot'],
-        -drone.vel.rot[1]
+        -drone.vel.rot[1],
+        input['debug']
     )
     engine_forces = engine_output_with_response(
         drone.engine_spec,
