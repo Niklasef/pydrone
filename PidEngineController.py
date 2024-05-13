@@ -54,7 +54,7 @@ class PidController:
         self.kd_yaw = kd_yaw
         self.integral_error_yaw = 0
         self.previous_error_yaw = 0
-        self.max_yaw_rate = 2
+        self.max_yaw_rate = 1.5
 
 
     def blend_outputs(self, vertical, pitch, roll, yaw):
