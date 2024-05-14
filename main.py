@@ -162,12 +162,13 @@ def static_vertices_indices(nav_points):
 
     return vertices, indices
 
-def poll_input(input_sim_queue, input_render_queue, stop_event):
+def poll_input(input_sim_queue, input_render_queue, stop_event, render_flag):
     run_on_specific_core(1)
     prev_frame = 0
     input_method = get_input_method()
+    print('Press: 1 - quit, 0 - reset PID errors')
 
-    while True:
+    while not stop_event.is_set():
         while True:
             now = time.perf_counter()
             if prev_frame == 0:
@@ -182,15 +183,20 @@ def poll_input(input_sim_queue, input_render_queue, stop_event):
             input = gamepad_controller.read()
         else:
             input = poll_keyboard()
+        if 1 in input['debug']:
+            print("Quit command received. Setting stop event.")
+            stop_event.set()
 
-        input_sim_queue.put(input)
-        input_render_queue.put(input)
+        input_sim_queue.put_nowait(input)
+        if render_flag:
+            input_render_queue.put_nowait(input)
+
 
         # if delta_time > 0:
         #     fps = 1 / delta_time
         #     print(f"Input FPS: {fps:.2f}\n")
 
-def render_proc(sim_state_queue, input_queue):
+def render_proc(sim_state_queue, input_queue, stop_event):
     run_on_specific_core(2)
     while sim_state_queue.qsize() > 0:
         sim_state = sim_state_queue.get()
@@ -225,7 +231,7 @@ def render_proc(sim_state_queue, input_queue):
 
     time.sleep(2)
 
-    while True:
+    while not stop_event.is_set():
         time.sleep(0.001)
         while sim_state_queue.qsize() > 0:
             sim_state = sim_state_queue.get()
@@ -271,10 +277,10 @@ def render_proc(sim_state_queue, input_queue):
         #     drone,
         #     delta_time)
 
-def console_proc(sim_state_queue):
+def console_proc(sim_state_queue, stop_event):
     run_on_specific_core(3)
     prev_frame = 0
-    while True:
+    while not stop_event.is_set():
         while True:
             now = time.perf_counter()
             if prev_frame == 0:
@@ -287,6 +293,10 @@ def console_proc(sim_state_queue):
             sim_state = sim_state_queue.get()
         print(metrics(sim_state.drone))
         print(ef_metrics(sim_state.engine_forces, sim_state.engine_torque))
+
+        if sim_state.delta_time > 0:
+            fps = 1 / sim_state.delta_time
+            print(f"Sim FPS: {fps:.2f}\n")
 
 def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event, render_flag=True):
     (frame_count, prev_frame, drone, pidController) = init_sim()
@@ -323,7 +333,7 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
         'debug': []
     }
 
-    while True:
+    while not stop_event.is_set():
         if not input_queue.empty():
             input_data = input_queue.get()
         (frame_count,
@@ -348,16 +358,12 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
             engine_forces,
             engine_torque)
         if render_flag:
-            render_sim_state_queue.put(sim_state)
-        console_sim_state_queue.put(sim_state)
+            render_sim_state_queue.put_nowait(sim_state)
+        console_sim_state_queue.put_nowait(sim_state)
 
         # if delta_time > 0:
         #     fps = 1 / delta_time
         #     print(f"Sim FPS: {fps:.2f}\n")
-
-    while not stop_event.is_set():  # Loop until stop event is set
-        print("stop event")
-        stop_event.set()
 
 # Usage:
 # To run without rendering:
@@ -374,27 +380,28 @@ if __name__ == "__main__":
     console_sim_state_queue = Queue()
     stop_event = Event()  # Create an event to signal the input process to stop
 
-    poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event))
+    poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event, render_flag))
     sim_process = Process(target=run, args=(input_sim_queue, render_sim_state_queue, console_sim_state_queue, stop_event, render_flag))
-    render_process = Process(target=render_proc, args=(render_sim_state_queue, input_render_queue))
-    console_process = Process(target=console_proc, args=(console_sim_state_queue,))
+    console_process = Process(target=console_proc, args=(console_sim_state_queue, stop_event))
+    if render_flag:
+        render_process = Process(target=render_proc, args=(render_sim_state_queue, input_render_queue, stop_event))
 
-    try:
-        poll_input_proc.start()
-        sim_process.start()
-        if render_flag:
-            render_process.start()
-        console_process.start()
-    finally:
-        # Ensure that the input polling process is stopped
-        stop_event.set()
+    sim_process.start()
+    poll_input_proc.start()
+    time.sleep(1)
+    if render_flag:
+        render_process.start()
+    console_process.start()
 
-        # Kill all spawned processes
-        kill_all_processes()
+    # Ensure that the input polling process is stopped
+    # stop_event.set()
 
-        # Join the input polling process (ensure it's properly terminated)
-        poll_input_proc.join(2)
-        sim_process.join(2)
-        if render_flag:
-            render_process.join(2)
-        console_process.join(2)
+    # Join the input polling process (ensure it's properly terminated)
+    console_process.join()
+    print('console_process.join()')
+    poll_input_proc.join()
+    print('poll_input_proc.join()')
+    sim_process.join()
+    print('sim_process.join()')
+    if render_flag:
+        render_process.join()
