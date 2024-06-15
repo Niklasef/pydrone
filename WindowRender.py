@@ -3,13 +3,16 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 from pyrr import Matrix44, matrix44, Vector3
+from CoordinateSystem import transform_to_global
 
-
-def init(vertices, indices, static_vertices, static_indices):
+def init(vertices, indices, static_vertices, static_indices, present_window=None):
     if not glfw.init():
         raise Exception("GLFW can't initialize")
 
-    window = glfw.create_window(1820, 1024, "Simple Triangle", None, None)
+    if present_window:
+        window = present_window
+    else:
+        window = glfw.create_window(1820, 1024, "Simple Triangle", None, None)
 
     if not window:
         glfw.terminate()
@@ -288,7 +291,91 @@ def render(window, shader, VAO, indices, cam_y, cam_z, rotation, translation, bo
 
     glfw.swap_buffers(window)
 
+def vertices_indices(drone):
+    vertices_list = []
+    indices_list = []
+    face_indices = [
+        0, 1, 2, 2, 3, 0,    # Front face
+        1, 5, 6, 6, 2, 1,    # Right face
+        7, 6, 5, 5, 4, 7,    # Back face
+        4, 0, 3, 3, 7, 4,    # Left face
+        4, 5, 1, 1, 0, 4,    # Bottom face
+        3, 2, 6, 6, 7, 3     # Top face
+    ]
+    
+    i = 0
 
+    for _, spatial_object in enumerate(drone.spatial_objects):
+        corners = [
+            spatial_object.body.shape.left_bottom_inner_corner,
+            spatial_object.body.shape.right_bottom_inner_corner,
+            spatial_object.body.shape.right_top_inner_corner,
+            spatial_object.body.shape.left_top_inner_corner,
+            spatial_object.body.shape.left_bottom_outer_corner,
+            spatial_object.body.shape.right_bottom_outer_corner,
+            spatial_object.body.shape.right_top_outer_corner,
+            spatial_object.body.shape.left_top_outer_corner,
+        ]
+        for corner in corners:
+            vertices_list.extend(
+                transform_to_global(spatial_object.coordinateSystem, corner))
+            vertices_list.extend([0.0, 0.0, -1.0])
+            if i == 0:
+                vertices_list.extend([1.0, 0.0, 0.0])  # Red for first part
+            elif i == 1:
+                vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
+            elif i == 2:
+                vertices_list.extend([1.0, 1.0, 1.0])  # Green for second part
+            elif i == 3:
+                vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
+
+        indices_list.extend([index + i*8 for index in face_indices])
+        i += 1
+
+    vertices = np.array(vertices_list, dtype=np.float32)
+    indices = np.array(indices_list, dtype=np.uint32)
+
+    return vertices, indices
+
+def static_vertices_indices(nav_points):
+    vertices_list = []
+    indices_list = []
+    face_indices = [
+        0, 1, 2, 2, 3, 0,    # Front face
+        1, 5, 6, 6, 2, 1,    # Right face
+        7, 6, 5, 5, 4, 7,    # Back face
+        4, 0, 3, 3, 7, 4,    # Left face
+        4, 5, 1, 1, 0, 4,    # Bottom face
+        3, 2, 6, 6, 7, 3     # Top face
+    ]
+    
+    i = 0
+    size = 0.1
+
+    for _, nav_point in enumerate(nav_points):
+        corners = [
+            np.array([-size,-size,-size] + nav_point.position),
+            np.array([size,-size,-size] + nav_point.position),
+            np.array([-size,size,-size] + nav_point.position),
+            np.array([size,size,-size] + nav_point.position),
+            np.array([-size,-size,size] + nav_point.position),
+            np.array([size,-size,size] + nav_point.position),
+            np.array([-size,size,size] + nav_point.position),
+            np.array([size,size,size] + nav_point.position),
+        ]
+        for corner in corners:
+            vertices_list.extend(
+                transform_to_global(nav_point.coordinate_system, corner))
+            vertices_list.extend([0.0, 0.0, -1.0]) # Normal
+            vertices_list.extend([1.0, 1.0, 1.0])  # White
+
+        indices_list.extend([index + i*8 for index in face_indices])
+        i += 1
+
+    vertices = np.array(vertices_list, dtype=np.float32)
+    indices = np.array(indices_list, dtype=np.uint32)
+
+    return vertices, indices
 
 def window_active(window):
     return not glfw.window_should_close(window)

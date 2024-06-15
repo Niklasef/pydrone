@@ -36,8 +36,9 @@ import time
 import os
 import psutil
 from multiprocessing import Process, Queue, Event
+from queue import Empty
 import numpy as np
-from WindowRender import init, render, window_active, end
+from WindowRender import init, render, window_active, end, static_vertices_indices, vertices_indices
 from CoordinateSystem import CoordinateSystem, transform_to_global, rotate, translate, rotate_to_global, rotate_to_local, euler_angles
 from pyrr import Matrix44, matrix44, Vector3
 from Physics import Body, Force, Velocity, apply_rot_force, apply_trans_force, earth_g_force, lin_air_drag, rot_air_torque
@@ -45,6 +46,7 @@ from Cube import Cube, create_cube, area
 from KeyboardController import poll_keyboard
 from GamepadController import XboxController
 from Sim import init_sim, step_sim, SpatialObject
+from gym import run_gym
 from Navigation import NavPoint, nav_error
 from Drone import metrics
 
@@ -60,10 +62,11 @@ def get_input_method():
             return "gamepad"
     return "keyboard"  # Default to keyboard if no argument or unrecognized argument
 
-def run_on_specific_core(core):
+def run_on_specific_cores(core_start, core_end):
     pid = os.getpid()
     p = psutil.Process(pid)
-    p.cpu_affinity([core])
+    cores = list(range(core_start, core_end + 1))
+    p.cpu_affinity(cores)
 
 def ef_metrics(engine_forces, engine_torque):
     metrics = "Engines\n"
@@ -76,94 +79,8 @@ def ef_metrics(engine_forces, engine_torque):
 
     return metrics
 
-def vertices_indices(drone):
-    vertices_list = []
-    indices_list = []
-    face_indices = [
-        0, 1, 2, 2, 3, 0,    # Front face
-        1, 5, 6, 6, 2, 1,    # Right face
-        7, 6, 5, 5, 4, 7,    # Back face
-        4, 0, 3, 3, 7, 4,    # Left face
-        4, 5, 1, 1, 0, 4,    # Bottom face
-        3, 2, 6, 6, 7, 3     # Top face
-    ]
-    
-    i = 0
-
-    for _, spatial_object in enumerate(drone.spatial_objects):
-        corners = [
-            spatial_object.body.shape.left_bottom_inner_corner,
-            spatial_object.body.shape.right_bottom_inner_corner,
-            spatial_object.body.shape.right_top_inner_corner,
-            spatial_object.body.shape.left_top_inner_corner,
-            spatial_object.body.shape.left_bottom_outer_corner,
-            spatial_object.body.shape.right_bottom_outer_corner,
-            spatial_object.body.shape.right_top_outer_corner,
-            spatial_object.body.shape.left_top_outer_corner,
-        ]
-        for corner in corners:
-            vertices_list.extend(
-                transform_to_global(spatial_object.coordinateSystem, corner))
-            vertices_list.extend([0.0, 0.0, -1.0])
-            if i == 0:
-                vertices_list.extend([1.0, 0.0, 0.0])  # Red for first part
-            elif i == 1:
-                vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
-            elif i == 2:
-                vertices_list.extend([1.0, 1.0, 1.0])  # Green for second part
-            elif i == 3:
-                vertices_list.extend([0.0, 1.0, 0.0])  # Green for second part
-
-        indices_list.extend([index + i*8 for index in face_indices])
-        i += 1
-
-    vertices = np.array(vertices_list, dtype=np.float32)
-    indices = np.array(indices_list, dtype=np.uint32)
-
-    return vertices, indices
-
-def static_vertices_indices(nav_points):
-    vertices_list = []
-    indices_list = []
-    face_indices = [
-        0, 1, 2, 2, 3, 0,    # Front face
-        1, 5, 6, 6, 2, 1,    # Right face
-        7, 6, 5, 5, 4, 7,    # Back face
-        4, 0, 3, 3, 7, 4,    # Left face
-        4, 5, 1, 1, 0, 4,    # Bottom face
-        3, 2, 6, 6, 7, 3     # Top face
-    ]
-    
-    i = 0
-    size = 0.1
-
-    for _, nav_point in enumerate(nav_points):
-        corners = [
-            np.array([-size,-size,-size] + nav_point.position),
-            np.array([size,-size,-size] + nav_point.position),
-            np.array([-size,size,-size] + nav_point.position),
-            np.array([size,size,-size] + nav_point.position),
-            np.array([-size,-size,size] + nav_point.position),
-            np.array([size,-size,size] + nav_point.position),
-            np.array([-size,size,size] + nav_point.position),
-            np.array([size,size,size] + nav_point.position),
-        ]
-        for corner in corners:
-            vertices_list.extend(
-                transform_to_global(nav_point.coordinate_system, corner))
-            vertices_list.extend([0.0, 0.0, -1.0]) # Normal
-            vertices_list.extend([1.0, 1.0, 1.0])  # White
-
-        indices_list.extend([index + i*8 for index in face_indices])
-        i += 1
-
-    vertices = np.array(vertices_list, dtype=np.float32)
-    indices = np.array(indices_list, dtype=np.uint32)
-
-    return vertices, indices
-
-def poll_input(input_sim_queue, input_render_queue, stop_event, render_flag):
-    run_on_specific_core(1)
+def poll_input(input_sim_queue, input_render_queue, stop_event, render_flag, gym_flag):
+    run_on_specific_cores(1, 1)
     prev_frame = 0
     input_method = get_input_method()
     print('Press: 1 - quit, 0 - reset PID errors')
@@ -186,8 +103,10 @@ def poll_input(input_sim_queue, input_render_queue, stop_event, render_flag):
         if 1 in input['debug']:
             print("Quit command received. Setting stop event.")
             stop_event.set()
+            print("stop event set")
 
-        input_sim_queue.put_nowait(input)
+        if not gym_flag:
+            input_sim_queue.put_nowait(input)
         if render_flag:
             input_render_queue.put_nowait(input)
 
@@ -196,19 +115,11 @@ def poll_input(input_sim_queue, input_render_queue, stop_event, render_flag):
         #     fps = 1 / delta_time
         #     print(f"Input FPS: {fps:.2f}\n")
 
-def render_proc(sim_state_queue, input_queue, stop_event):
-    run_on_specific_core(2)
+def render_proc(sim_state_queue, input_queue, stop_event, nav_points):
+    run_on_specific_cores(2, 2)
     while sim_state_queue.qsize() > 0:
         sim_state = sim_state_queue.get()
 
-    nav_points = [
-        NavPoint(
-            coordinate_system=CoordinateSystem(
-                origin=np.array([0, 0, 0]),
-                rotation=np.eye(3)),
-            position=np.array([5, 5, 0]))
-    ]
-    # print(nav_points)
     (vertices, indices) = vertices_indices(sim_state.drone)
     (static_vertices, static_indices) = static_vertices_indices(nav_points)
 
@@ -270,15 +181,8 @@ def render_proc(sim_state_queue, input_queue, stop_event):
         #     fps = 1 / delta_time
         #     print(f"Render FPS: {fps:.2f}\n")
 
-        # (nav_error_, nav_goal_reached) = nav_error(
-        #     nav_error_,
-        #     start_nav_point,
-        #     nav_points[0],
-        #     drone,
-        #     delta_time)
-
 def console_proc(sim_state_queue, stop_event):
-    run_on_specific_core(3)
+    run_on_specific_cores(3, 3)
     prev_frame = 0
     while not stop_event.is_set():
         while True:
@@ -298,33 +202,14 @@ def console_proc(sim_state_queue, stop_event):
             fps = 1 / sim_state.delta_time
             print(f"Sim FPS: {fps:.2f}\n")
 
-def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event, render_flag=True):
+def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event, console_flag, gym_flag, gym_sim_state_queue, gym_input_sim_queue, render_flag=True):
+    run_on_specific_cores(0, 0)
+
     (frame_count, prev_frame, drone, pidController) = init_sim()
-
-    run_on_specific_core(0)
-
-    forces = [
-        Force(
-            dir=np.array([0.0, 1.0, 0.0]),
-            pos=np.array([-0.5, 0.0, 0.5]),
-            magnitude=3.0),
-        Force(
-            dir=np.array([0.0, 1.0, 0.0]),
-            pos=np.array([0.5, 0.0, 0.5]),
-            magnitude=3.0),
-        Force(
-            dir=np.array([0.0, 1.0, 0.0]),
-            pos=np.array([0.5, 0.0, -0.5]),
-            magnitude=3.0),
-        Force(
-            dir=np.array([0.0, 1.0, 0.0]),
-            pos=np.array([-0.5, 0.0, -0.5]),
-            magnitude=3.0)]
     start = time.time()
     time_passed = 0
     prev_frame = 0
     engine_input = [0, 0, 0, 0]
-
     input_data = {
         'z_rot': 0,
         'x_rot': 0,
@@ -334,8 +219,42 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
     }
 
     while not stop_event.is_set():
-        if not input_queue.empty():
-            input_data = input_queue.get()
+        gym_input_recieved = False
+        if not gym_flag and not input_queue.empty():
+            try:
+                input_data = input_queue.get_nowait()
+            except Empty:
+                input_data = {
+                    'z_rot': 0,
+                    'x_rot': 0,
+                    'y_rot': 0,
+                    'y_trans': 0,
+                    'debug': []
+                }
+                pass
+        elif gym_flag:
+            try:
+                input_data = gym_input_sim_queue.get_nowait()
+                gym_input_recieved = True
+            except Empty:
+                gym_input_recieved = False
+                pass
+
+        # Reset Sim
+        if 3 in input_data["debug"]:
+            (frame_count, prev_frame, drone, pidController) = init_sim()
+            start = time.time()
+            time_passed = 0
+            prev_frame = 0
+            engine_input = [0, 0, 0, 0]
+            input_data = {
+                'z_rot': 0,
+                'x_rot': 0,
+                'y_rot': 0,
+                'y_trans': 0,
+                'debug': []
+            }
+
         (frame_count,
             prev_frame,
             drone,
@@ -359,7 +278,10 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
             engine_torque)
         if render_flag:
             render_sim_state_queue.put_nowait(sim_state)
-        console_sim_state_queue.put_nowait(sim_state)
+        if console_flag:
+            console_sim_state_queue.put_nowait(sim_state)
+        if gym_flag and gym_input_recieved:
+            gym_sim_state_queue.put_nowait(sim_state)
 
         # if delta_time > 0:
         #     fps = 1 / delta_time
@@ -370,38 +292,67 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
 # python your_script.py --no-render
 # To run with rendering:
 # python your_script.py
+def gym_proc(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points):
+    run_on_specific_cores(1, 15)
+    run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, nav_points[0], nav_points[1])
 
 if __name__ == "__main__":
     render_flag = "--no-render" not in sys.argv  # Check if --no-render flag is present
+    gym_flag = "--gym" in sys.argv
+    console_flag = "--console" in sys.argv
+
+    nav_points = [
+        NavPoint(
+            coordinate_system=CoordinateSystem(
+                origin=np.array([0, 0, 0]),
+                rotation=np.eye(3)),
+            position=np.array([0, 0, 0])),
+        NavPoint(
+            coordinate_system=CoordinateSystem(
+                origin=np.array([0, 0, 0]),
+                rotation=np.eye(3)),
+            position=np.array([0, 7, 0]))
+    ]
 
     input_sim_queue = Queue()
     input_render_queue = Queue()
+    gym_input_sim_queue = Queue()
     render_sim_state_queue = Queue()
     console_sim_state_queue = Queue()
+    gym_sim_state_queue = Queue()
     stop_event = Event()  # Create an event to signal the input process to stop
 
-    poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event, render_flag))
-    sim_process = Process(target=run, args=(input_sim_queue, render_sim_state_queue, console_sim_state_queue, stop_event, render_flag))
-    console_process = Process(target=console_proc, args=(console_sim_state_queue, stop_event))
+    poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event, render_flag, gym_flag))
+    sim_process = Process(target=run, args=(input_sim_queue, render_sim_state_queue, console_sim_state_queue, stop_event, console_flag, gym_flag, gym_sim_state_queue, gym_input_sim_queue, render_flag))
+    if console_flag:
+        console_process = Process(target=console_proc, args=(console_sim_state_queue, stop_event))
     if render_flag:
-        render_process = Process(target=render_proc, args=(render_sim_state_queue, input_render_queue, stop_event))
+        render_process = Process(target=render_proc, args=(render_sim_state_queue, input_render_queue, stop_event, nav_points))
 
     sim_process.start()
     poll_input_proc.start()
     time.sleep(1)
     if render_flag:
         render_process.start()
-    console_process.start()
+    if console_flag:
+        console_process.start()
+    if gym_flag:
+        gym_process = Process(target=gym_proc, args=(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points))
+        gym_process.start()
 
     # Ensure that the input polling process is stopped
     # stop_event.set()
 
     # Join the input polling process (ensure it's properly terminated)
-    console_process.join()
-    print('console_process.join()')
     poll_input_proc.join()
     print('poll_input_proc.join()')
+    if gym_flag:
+        gym_process.join()
+        print('gym_process.join()')
     sim_process.join()
     print('sim_process.join()')
+    if console_flag:
+        console_process.join()
+        print('console_process.join()')
     if render_flag:
         render_process.join()

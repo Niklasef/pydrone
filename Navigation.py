@@ -21,7 +21,7 @@ def calculate_distance_to_optimal_path(drone_position, path_point1, path_point2)
     return np.linalg.norm(drone_position - point_on_segment)
 
 def nav_error(
-    acc_error,
+    prev_distance,
     start_nav_point,
     end_nav_point,
     drone,
@@ -36,30 +36,37 @@ def nav_error(
 
     distance_to_nav_point = np.linalg.norm(
         drone.coordinate_system.origin - end_nav_point_global)
+    delta_time_factor = delta_time if delta_time > 0 else 0.001
+
+    # if delta_time > 0:
+    #     print("fps in sim: " + str(1/delta_time))
+    # else:
+    #     print("couldnt calc sim fps")
 
 
-    if distance_to_nav_point < 0.5:  # Return early if too close to the nav point to avoid large normalized errors.
-        return (acc_error, True)
+    # if distance_to_nav_point < 0.5:  # Return early if too close to the nav point to avoid large normalized errors.
+    #     return (acc_error, True)
 
     # print(distance_to_nav_point)
-    nav_distance = np.linalg.norm(
-        start_nav_point_global - end_nav_point_global)
+    # nav_distance = np.linalg.norm(
+    #     start_nav_point_global - end_nav_point_global)
 
-    distance_to_optimal_path = calculate_distance_to_optimal_path(
-        drone.coordinate_system.origin,
-        start_nav_point_global,
-        end_nav_point_global)
+    # distance_to_optimal_path = calculate_distance_to_optimal_path(
+    #     drone.coordinate_system.origin,
+    #     start_nav_point_global,
+    #     end_nav_point_global)
 
-    drone_heading = euler_angles(drone.coordinate_system)[2]
-    vector = end_nav_point_global - start_nav_point_global  # vector pointing from start to end
-    desired_heading = np.arctan2(vector[0], vector[2])  # atan2(x, z) gives the angle of a vector in the xz-plane from the positive z-axis
+    # drone_heading = euler_angles(drone.coordinate_system)[2]
+    # vector = end_nav_point_global - start_nav_point_global  # vector pointing from start to end
+    # desired_heading = np.arctan2(vector[0], vector[2])  # atan2(x, z) gives the angle of a vector in the xz-plane from the positive z-axis
 
-    heading_error = drone_heading - desired_heading
-    heading_error = (heading_error + np.pi) % (2 * np.pi) - np.pi  # Normalize to [-π, π]
-    heading_error = np.abs(heading_error)
-    # Weight the heading_error, calculate the combined error and normalize by distance_to_nav_point
-    heading_weight = 0.1
-    combined_error = (distance_to_optimal_path + (heading_weight * heading_error)) * delta_time
-    normalized_error = combined_error / nav_distance
-    
-    return (acc_error + normalized_error, False)
+    # heading_error = drone_heading - desired_heading
+    # heading_error = (heading_error + np.pi) % (2 * np.pi) - np.pi  # Normalize to [-π, π]
+    # heading_error = np.abs(heading_error)
+    # # Weight the heading_error, calculate the combined error and normalize by distance_to_nav_point
+    # heading_weight = 0.01
+    # combined_error = (distance_to_optimal_path + (heading_weight * heading_error)) * delta_time
+    # normalized_error = (combined_error / nav_distance) * 10000
+    # print('distance_to_nav_point = ' + str(distance_to_nav_point))
+    return (prev_distance-distance_to_nav_point, False, distance_to_nav_point)
+    # return (distance_to_nav_point, False, distance_to_nav_point)
