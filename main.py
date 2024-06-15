@@ -35,6 +35,7 @@ import sys
 import time
 import os
 import psutil
+import argparse
 from multiprocessing import Process, Queue, Event
 from queue import Empty
 import numpy as np
@@ -287,19 +288,23 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
         #     fps = 1 / delta_time
         #     print(f"Sim FPS: {fps:.2f}\n")
 
-# Usage:
-# To run without rendering:
-# python your_script.py --no-render
-# To run with rendering:
-# python your_script.py
 def gym_proc(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points):
     run_on_specific_cores(1, 15)
     run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, nav_points[0], nav_points[1])
 
 if __name__ == "__main__":
-    render_flag = "--no-render" not in sys.argv  # Check if --no-render flag is present
-    gym_flag = "--gym" in sys.argv
-    console_flag = "--console" in sys.argv
+    parser = argparse.ArgumentParser(description='Run drone simulation.')
+    parser.add_argument('--no-render', action='store_true', help='Run without rendering.')
+    parser.add_argument('--gym', action='store_true', help='Run in gym mode.')
+    parser.add_argument('--console', action='store_true', help='Run in console mode.')
+    parser.add_argument('--gym-time', type=int, default=75, help='Time in seconds to run the gym simulation.')
+    
+    args = parser.parse_args()
+    
+    render_flag = not args.no_render  # Check if --no-render flag is present
+    gym_flag = args.gym
+    console_flag = args.console
+    gym_time = args.gym_time  # Get the gym time from command-line argument
 
     nav_points = [
         NavPoint(
@@ -340,8 +345,8 @@ if __name__ == "__main__":
         gym_process = Process(target=gym_proc, args=(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points))
         gym_process.start()
 
-    # Ensure that the input polling process is stopped
-    # stop_event.set()
+    time.sleep(gym_time)  # Use the gym time from command-line argument
+    stop_event.set()
 
     # Join the input polling process (ensure it's properly terminated)
     poll_input_proc.join()
