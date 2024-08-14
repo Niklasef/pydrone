@@ -5,9 +5,9 @@ class PidController:
     def __init__(
         self,
 
-        kp=200,
-        ki=0.1,
-        kd=0.01,
+        kp=1,
+        ki=0.01,
+        kd=0.1,
         target=0,
         max_vertical_velocity=3.85,
 
