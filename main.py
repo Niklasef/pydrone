@@ -296,7 +296,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run drone simulation.')
     parser.add_argument('--no-render', action='store_true', help='Run without rendering.')
     parser.add_argument('--gym', action='store_true', help='Run in gym mode.')
-    parser.add_argument('--console', action='store_true', help='Run in console mode.')
+    parser.add_argument('--console', action='store_true', help='Console logging mode.')
     parser.add_argument('--gym-time', type=int, default=75, help='Time in seconds to run the gym simulation.')
     
     args = parser.parse_args()
