@@ -51,7 +51,7 @@ from gym import run_gym
 from Navigation import NavPoint, nav_error
 from Drone import metrics
 
-SimState = namedtuple('SimState', 'delta_time drone engine_forces, engine_torque')
+SimState = namedtuple('SimState', 'delta_time drone engine_forces, engine_torque, pidController')
 
 
 def get_input_method():
@@ -77,6 +77,36 @@ def ef_metrics(engine_forces, engine_torque):
     metrics += "4\t\t3\n"  # Engine numbers bottom
     metrics += f"Force: {engine_forces[3].magnitude:.3f}\tForce: {engine_forces[2].magnitude:.3f}\n"
     metrics += f"Torq: {engine_torque:.6f}\tTorq: {engine_torque:.6f}\n"
+
+    return metrics
+
+def pid_metrics(pid):
+    metrics = "PID Metrics (Dynamic Values)\n"
+
+    # Vertical control dynamic PID values
+    metrics += "Vertical Control:\n"
+    metrics += f"  Current Error: {pid.previous_error:.3f}\n"
+    metrics += f"  Integral Error: {pid.integral_error:.3f}\n"
+    # Derivative error can be calculated manually if needed
+    metrics += f"  Derivative Error: {pid.kd * ((pid.target - pid.previous_error) / pid.max_vertical_velocity):.3f}\n\n"
+
+    # Pitch control dynamic PID values
+    metrics += "Pitch Control:\n"
+    metrics += f"  Current Error: {pid.previous_error_pitch:.3f}\n"
+    metrics += f"  Integral Error: {pid.integral_error_pitch:.3f}\n"
+    metrics += f"  Derivative Error: {pid.kd_pitch * ((pid.target - pid.previous_error_pitch) / pid.max_pitch):.3f}\n\n"
+
+    # Roll control dynamic PID values
+    metrics += "Roll Control:\n"
+    metrics += f"  Current Error: {pid.previous_error_roll:.3f}\n"
+    metrics += f"  Integral Error: {pid.integral_error_roll:.3f}\n"
+    metrics += f"  Derivative Error: {pid.kd_roll * ((pid.target - pid.previous_error_roll) / pid.max_roll):.3f}\n\n"
+
+    # Yaw control dynamic PID values
+    metrics += "Yaw Control:\n"
+    metrics += f"  Current Error: {pid.previous_error_yaw:.3f}\n"
+    metrics += f"  Integral Error: {pid.integral_error_yaw:.3f}\n"
+    metrics += f"  Derivative Error: {pid.kd_yaw * ((pid.target - pid.previous_error_yaw) / pid.max_yaw_rate):.3f}\n"
 
     return metrics
 
@@ -198,6 +228,7 @@ def console_proc(sim_state_queue, stop_event):
             sim_state = sim_state_queue.get()
         print(metrics(sim_state.drone))
         print(ef_metrics(sim_state.engine_forces, sim_state.engine_torque))
+        print(pid_metrics(sim_state.pidController))
 
         if sim_state.delta_time > 0:
             fps = 1 / sim_state.delta_time
@@ -276,7 +307,8 @@ def run(input_queue, render_sim_state_queue, console_sim_state_queue, stop_event
             delta_time,
             drone,
             engine_forces,
-            engine_torque)
+            engine_torque,
+            pidController)
         if render_flag:
             render_sim_state_queue.put_nowait(sim_state)
         if console_flag:
