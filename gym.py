@@ -88,6 +88,7 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
     loss_function = keras.losses.Huber()
 
     env = DroneEnv(start_nav_point, end_nav_point, gym_input_sim_queue, gym_sim_state_queue)
+    (optimal_distance, optimal_time) = env.calculate_optimal_distance_and_time()
     model_file = "./gym-output/current/my_model.h5"
 
     # Load the entire model if it exists
@@ -106,9 +107,12 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
 
 
     # while True:  # Run until solved
+    drone_distances = []
     while not stop_event.is_set():
         state = np.array(env.reset())
+        drone_pos = start_nav_point.position
         episode_reward = 0
+        drone_distance = 0
 
         for timestep in range(1, max_steps_per_episode):
             start_time = time.time()  # Start time of the iteration
@@ -150,7 +154,10 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
             epsilon = max(epsilon, epsilon_min)
 
             # Apply the sampled action in our environment
-            state_next, reward, done, _ = env.step(action, stop_event)
+            state_next, reward, done, _, drone_pos_ = env.step(action, stop_event)
+            drone_distance += np.linalg.norm(drone_pos_ - drone_pos)
+            
+            drone_pos = drone_pos_
             # print(reward)
             state_next = np.array(state_next)
 
@@ -212,8 +219,10 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
                 # update the the target network with new weights
                 model_target.set_weights(model.get_weights())
                 # Log details
-                template = "running reward: {:.2f} at episode {}, frame count {}, loss: {:.4f}"
-                logging.info(template.format(running_reward, episode_count, frame_count, loss.numpy()))
+                average_distance = np.mean(drone_distances)
+                template = "running reward: {:.2f} at episode {}, frame count {}, loss: {:.4f}, optimal_distance: {}, avg distance drone_distances: {}, optimal_time: {}"
+                logging.info(template.format(running_reward, episode_count, frame_count, loss.numpy(), optimal_distance, average_distance, optimal_time))
+                drone_distances = []
 
 
             # Limit the state and reward history
@@ -249,6 +258,7 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
         # print(f"epsilon: '{epsilon}'")
 
         episode_count += 1
+        drone_distances.append(drone_distance)
 
         if running_reward > 10:  # Condition to consider the task solved
             print("Solved at episode {}!".format(episode_count))

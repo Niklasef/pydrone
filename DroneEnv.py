@@ -21,6 +21,16 @@ class DroneEnv:
         self.gym_sim_state_queue = gym_sim_state_queue
         self.state = self.reset()
 
+    def calculate_optimal_distance_and_time(self):
+        # Calculate the straight-line distance from start to end NavPoint
+        optimal_distance = np.linalg.norm(self.end_nav_point.position - self.start_nav_point.position)
+        
+        # Assuming the drone flies at max speed
+        max_speed = 5.0  # m/s
+        optimal_time = optimal_distance / max_speed
+        
+        return optimal_distance, optimal_time
+
     def to_state(self, drone):
         state_list = []
         state_list.extend(self.end_nav_point.position/5)
@@ -40,8 +50,8 @@ class DroneEnv:
             info (dict): Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
         # Implement the logic for one step of simulation, e.g.,
-        state, reward, done, info = self.simulate(action, stop_event)
-        return state, reward, done, info
+        state, reward, done, info, drone_pos = self.simulate(action, stop_event)
+        return state, reward, done, info, drone_pos
 
     def reset(self):
         """
@@ -125,4 +135,9 @@ class DroneEnv:
         # reward = (drone.coordinate_system.origin[0] - prev_drone.coordinate_system.origin[0])
         reward = nav_error_
 
-        return (self.to_state(sim_state.drone), reward, False, None)
+        return (
+            self.to_state(sim_state.drone),
+            reward,
+            False,
+            None,
+            sim_state.drone.coordinate_system.origin)
