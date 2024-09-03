@@ -108,14 +108,19 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
 
     # while True:  # Run until solved
     drone_distances = []
+    times_to_goal = []
+    goal_reached_count = 0
+    episodes_since_target_update = 0
     while not stop_event.is_set():
         state = np.array(env.reset())
         drone_pos = start_nav_point.position
         episode_reward = 0
         drone_distance = 0
+        start_time = time.time()  # Start time for the episode
+        reached_goal = False
 
         for timestep in range(1, max_steps_per_episode):
-            start_time = time.time()  # Start time of the iteration
+            current_time = time.time()  # Current time at this timestep
             if keyboard.is_pressed('q') or stop_event.is_set():  # Check if 'Q' is pressed
                 print("Q pressed, exiting training loop and saving model...")
                 model.compile(
@@ -220,10 +225,21 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
                 model_target.set_weights(model.get_weights())
                 # Log details
                 average_distance = np.mean(drone_distances)
-                template = "running reward: {:.2f} at episode {}, frame count {}, loss: {:.4f}, optimal_distance: {}, avg distance drone_distances: {}, optimal_time: {}"
-                logging.info(template.format(running_reward, episode_count, frame_count, loss.numpy(), optimal_distance, average_distance, optimal_time))
+                avg_times_to_goal = np.mean(times_to_goal)
+                goal_reached_rate = goal_reached_count / episodes_since_target_update
+                template = "running reward: {:.2f} at episode {}, frame count {}, loss: {:.4f}, optimal_distance: {}, avg drone_distances: {}, optimal_time: {}, avg_times_to_goal: {}, goal_reached_rate: {}"
+                logging.info(template.format(running_reward, episode_count, frame_count, loss.numpy(), optimal_distance, average_distance, optimal_time, avg_times_to_goal, goal_reached_rate))
                 drone_distances = []
+                times_to_goal = []
+                goal_reached_count = 0
+                episodes_since_target_update = 0
 
+            # Check if the drone is within 0.1 meters of the end navigation point
+            if np.linalg.norm(drone_pos - end_nav_point.position) <= 0.1 and not reached_goal:
+                time_to_goal = current_time - start_time
+                times_to_goal.append(time_to_goal)
+                reached_goal = True
+                goal_reached_count += 1
 
             # Limit the state and reward history
             if len(rewards_history) > max_memory_length:
@@ -258,6 +274,7 @@ def run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, start_nav_poin
         # print(f"epsilon: '{epsilon}'")
 
         episode_count += 1
+        episodes_since_target_update += 1
         drone_distances.append(drone_distance)
 
         if running_reward > 10:  # Condition to consider the task solved
