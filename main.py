@@ -51,6 +51,7 @@ from Sim import init_sim, step_sim, SpatialObject
 from gym import run_gym
 from Navigation import NavPoint, nav_error
 from Drone import metrics
+from Test import run_test 
 
 SimState = namedtuple('SimState', 'delta_time drone engine_forces, engine_torque, pidController')
 
@@ -325,10 +326,21 @@ def gym_proc(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points):
     run_on_specific_cores(1, 15)
     run_gym(stop_event, gym_input_sim_queue, gym_sim_state_queue, nav_points[0], nav_points[1])
 
+def test_proc(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points):
+    run_test(
+        stop_event,
+        nav_points[0],
+        nav_points[1],
+        gym_input_sim_queue,
+        gym_sim_state_queue,
+        "./gym-output/current/my_model.h5",
+        10)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run drone simulation.')
     parser.add_argument('--no-render', action='store_true', help='Run without rendering.')
     parser.add_argument('--gym', action='store_true', help='Run in gym mode.')
+    parser.add_argument('--test', action='store_true', help='Run in test mode.')
     parser.add_argument('--console', action='store_true', help='Console logging mode.')
     parser.add_argument('--gym-time', type=int, default=75, help='Time in seconds to run the gym simulation.')
     
@@ -336,6 +348,7 @@ if __name__ == "__main__":
     
     render_flag = not args.no_render  # Check if --no-render flag is present
     gym_flag = args.gym
+    test_flag = args.test
     console_flag = args.console
     gym_time = args.gym_time  # Get the gym time from command-line argument
 
@@ -361,7 +374,7 @@ if __name__ == "__main__":
     stop_event = Event()  # Create an event to signal the input process to stop
 
     poll_input_proc = Process(target=poll_input, args=(input_sim_queue, input_render_queue, stop_event, render_flag, gym_flag))
-    sim_process = Process(target=run, args=(input_sim_queue, render_sim_state_queue, console_sim_state_queue, stop_event, console_flag, gym_flag, gym_sim_state_queue, gym_input_sim_queue, render_flag))
+    sim_process = Process(target=run, args=(input_sim_queue, render_sim_state_queue, console_sim_state_queue, stop_event, console_flag, gym_flag or test_flag, gym_sim_state_queue, gym_input_sim_queue, render_flag))
     if console_flag:
         console_process = Process(target=console_proc, args=(console_sim_state_queue, stop_event))
     if render_flag:
@@ -377,6 +390,9 @@ if __name__ == "__main__":
     if gym_flag:
         gym_process = Process(target=gym_proc, args=(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points))
         gym_process.start()
+    if test_flag:
+        test_process = Process(target=test_proc, args=(gym_input_sim_queue, gym_sim_state_queue, stop_event, nav_points))
+        test_process.start()
 
     time.sleep(gym_time)  # Use the gym time from command-line argument
     stop_event.set()
@@ -387,6 +403,8 @@ if __name__ == "__main__":
     if gym_flag:
         gym_process.join()
         print('gym_process.join()')
+    if test_flag:
+        test_process.join()
     sim_process.join()
     print('sim_process.join()')
     if console_flag:
